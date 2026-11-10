@@ -1,0 +1,13 @@
+.gradle/
+build/
+out/
+run/
+*.iml
+.idea/
+.vscode/
+*.class
+*.log
+.DS_Store
+Thumbs.db
+# Keep large reference/source archives out of routine source commits.
+pulse-src.zip

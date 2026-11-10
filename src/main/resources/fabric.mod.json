@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "dercovisuals",
+  "version": "${version}",
+  "name": "DercoVisuals",
+  "description": "A modular client-side visual suite for Minecraft 1.21.11.",
+  "authors": ["enizer6569"],
+  "contact": {
+    "sources": "https://github.com/andreyromanov681-boop/DercoVisuals"
+  },
+  "license": "LicenseRef-DercoVisuals-Community",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["net.dercovisuals.DercoVisualsClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
