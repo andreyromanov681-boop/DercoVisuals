@@ -1,9 +1,9 @@
 package net.dercovisuals;
 
 public enum ModuleCategory {
-    HUD("HUD", "On-screen information and widgets"),
-    PLAYER("Player", "Player-side visual helpers"),
-    RENDER("Render", "Brightness and display options");
+    VISUALS("Visuals", "Visual effects and rendering"),
+    HUD("HUD", "Information arranged around your screen"),
+    PLAYER("Player", "View and camera controls");
 
     public final String title;
     public final String subtitle;

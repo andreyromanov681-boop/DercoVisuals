@@ -1,48 +1,19 @@
 $ErrorActionPreference = 'Stop'
 $RepoUrl = 'https://github.com/andreyromanov681-boop/DercoVisuals.git'
 $Branch = 'main'
-$SourceRoot = Split-Path -Parent $PSScriptRoot
-$ProjectRoot = $SourceRoot
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
 
 function Write-Step([string]$Message) {
     Write-Host "`n[DercoVisuals] $Message" -ForegroundColor Cyan
 }
 
 function Invoke-Git([string[]]$GitArgs, [string]$WorkingDirectory) {
-    Push-Location $WorkingDirectory
-    try {
-        & git @GitArgs
-        if ($LASTEXITCODE -ne 0) { throw "Git command failed: git $($GitArgs -join ' ')" }
-    } finally {
-        Pop-Location
-    }
-}
-
-function Copy-LightweightSources([string]$From, [string]$To) {
-    $items = @(
-        'README.md', 'LICENSE', 'AGENTS.md', 'CONTRIBUTORS.md', '.gitignore',
-        'build.gradle', 'settings.gradle', 'gradle.properties', '1.bat',
-        'gradlew.bat', 'gradlew', 'src', 'tools', '.github', 'docs'
-    )
-    foreach ($item in $items) {
-        $source = Join-Path $From $item
-        if (Test-Path $source) {
-            $destination = Join-Path $To $item
-            $parent = Split-Path -Parent $destination
-            if ($parent -and !(Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
-            if ((Get-Item $source).PSIsContainer) {
-                if (!(Test-Path $destination)) { New-Item -ItemType Directory -Path $destination -Force | Out-Null }
-                & robocopy $source $destination /E /NFL /NDL /NJH /NJS /NP | Out-Null
-                if ($LASTEXITCODE -ge 8) { throw "Could not copy source directory: $item" }
-            } else {
-                Copy-Item -LiteralPath $source -Destination $destination -Force
-            }
-        }
-    }
+    & git -C $WorkingDirectory @GitArgs
+    if ($LASTEXITCODE -ne 0) { throw "Git command failed: git $($GitArgs -join ' ')" }
 }
 
 function Push-ProjectSources([string]$Directory) {
-    Write-Step 'Publishing lightweight source and documentation files to GitHub'
+    Write-Step 'Staging only lightweight DercoVisuals sources and documentation'
     $files = @(
         'README.md', 'LICENSE', 'AGENTS.md', 'CONTRIBUTORS.md', '.gitignore',
         'build.gradle', 'settings.gradle', 'gradle.properties', '1.bat',
@@ -52,22 +23,29 @@ function Push-ProjectSources([string]$Directory) {
         & git -C $Directory add -- $file
         if ($LASTEXITCODE -ne 0) { throw "Git could not stage $file" }
     }
+
     & git -C $Directory diff --cached --quiet
     if ($LASTEXITCODE -ne 0) {
         & git -C $Directory -c user.name='enizer6569' -c user.email='224441679+andreyromanov681-boop@users.noreply.github.com' commit -m 'Update DercoVisuals sources'
         if ($LASTEXITCODE -ne 0) { throw 'Could not create the source commit.' }
     }
-    & git -C $Directory push origin $Branch
+
+    & git -C $Directory diff --quiet
     if ($LASTEXITCODE -ne 0) {
-        Write-Host '[DercoVisuals] GitHub push was not permitted. Continuing with the local source; players do not need repository write access.' -ForegroundColor Yellow
+        throw 'There are other unstaged tracked changes. Commit or stash them before running 1.bat; nothing was discarded.'
     }
+
+    Write-Step 'Rebasing the local source commit onto origin/main'
+    Invoke-Git @('pull', '--rebase', 'origin', $Branch) $Directory
+    Write-Step 'Pushing source changes to GitHub'
+    Invoke-Git @('push', 'origin', $Branch) $Directory
 }
 
 function Get-ReleaseJar {
-    Write-Step 'Looking for the latest public release JAR'
+    Write-Step 'Downloading the latest small player build from GitHub Releases'
     $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/andreyromanov681-boop/DercoVisuals/releases/latest' -Headers @{ 'User-Agent' = 'DercoVisuals-Updater' }
-    $asset = $release.assets | Where-Object { $_.name -like 'DercoVisuals-*.jar' -and $_.name -notlike '*-sources.jar' } | Select-Object -First 1
-    if (-not $asset) { throw 'No DercoVisuals release JAR is published yet. Run this script from a developer Git checkout after the first successful build.' }
+    $asset = $release.assets | Where-Object { $_.name -like 'DercoVisuals-*.jar' -and $_.name -notlike '*-sources.jar' -and $_.name -notlike '*-dev.jar' } | Select-Object -First 1
+    if (-not $asset) { throw 'No DercoVisuals player JAR is published yet. Check the GitHub Actions build.' }
     $target = Join-Path $env:TEMP $asset.name
     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $target -Headers @{ 'User-Agent' = 'DercoVisuals-Updater' }
     return $target
@@ -103,48 +81,35 @@ function Open-MinecraftLauncher {
 }
 
 try {
-    Write-Step 'DercoVisuals updater / builder'
-    $java = Get-Command java -ErrorAction SilentlyContinue
-    if (-not $java) { throw 'Java 21 is required. Install a Java 21 JDK/JRE and run 1.bat again.' }
-    $javaText = (& java -version 2>&1 | Out-String)
-    if ($javaText -notmatch 'version "(21|22|23|24|25)') {
-        throw "Java 21 or newer is required. Detected: $($javaText.Trim())"
-    }
-
-    if (Test-Path (Join-Path $SourceRoot '.git')) {
-        $ProjectRoot = $SourceRoot
-        Write-Step 'Updating the developer checkout from origin/main'
-        Invoke-Git @('pull', '--rebase', 'origin', $Branch) $ProjectRoot
-    } elseif (Get-Command git -ErrorAction SilentlyContinue) {
-        $ProjectRoot = Join-Path $env:TEMP 'DercoVisuals-source'
-        if (!(Test-Path (Join-Path $ProjectRoot '.git'))) {
-            if (Test-Path $ProjectRoot) { Remove-Item $ProjectRoot -Recurse -Force }
-            Write-Step 'Cloning the source repository into the temporary build folder'
-            Invoke-Git @('clone', '--branch', $Branch, $RepoUrl, $ProjectRoot) $env:TEMP
-        } else {
-            Invoke-Git @('pull', '--rebase', 'origin', $Branch) $ProjectRoot
+    Write-Step 'DercoVisuals updater'
+    if (Test-Path (Join-Path $ProjectRoot '.git')) {
+        # Maintainer mode. Only source paths above are staged; pulse-src.zip and caches are not.
+        $java = Get-Command java -ErrorAction SilentlyContinue
+        if (-not $java) { throw 'Java 21 is required for developer builds. Install a Java 21 JDK and run 1.bat again.' }
+        $javaText = (& java -version 2>&1 | Out-String)
+        if ($javaText -notmatch 'version "(21|22|23|24|25)') {
+            throw "Java 21 or newer is required. Detected: $($javaText.Trim())"
         }
-        Copy-LightweightSources $SourceRoot $ProjectRoot
+
+        Push-ProjectSources $ProjectRoot
+        Write-Step 'Building DercoVisuals'
+        $gradlew = Join-Path $ProjectRoot 'gradlew.bat'
+        if (!(Test-Path $gradlew)) { throw 'gradlew.bat is missing from the project.' }
+        & $gradlew build --no-daemon
+        if ($LASTEXITCODE -ne 0) { throw 'Gradle build failed. Check the error output above; Minecraft was not launched.' }
+
+        $buildDir = Join-Path $ProjectRoot 'build\libs'
+        $jar = Get-ChildItem -Path $buildDir -Filter 'DercoVisuals-*.jar' -File |
+            Where-Object { $_.Name -notlike '*-sources.jar' -and $_.Name -notlike '*-dev.jar' } |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if (-not $jar) { throw 'Gradle completed but no distributable DercoVisuals JAR was found.' }
+        Install-Mod $jar.FullName
     } else {
+        # Player mode: no Git clone, no Gradle, no Pulse source archive, no GitHub write access.
         $releaseJar = Get-ReleaseJar
         Install-Mod $releaseJar
-        Open-MinecraftLauncher
-        exit 0
     }
 
-    Push-ProjectSources $ProjectRoot
-    Write-Step 'Building DercoVisuals with Gradle (first build downloads dependencies)'
-    $gradlew = Join-Path $ProjectRoot 'gradlew.bat'
-    if (!(Test-Path $gradlew)) { throw 'gradlew.bat is missing from the project.' }
-    & $gradlew build --no-daemon
-    if ($LASTEXITCODE -ne 0) { throw 'Gradle build failed. Check the error output above; Minecraft was not launched.' }
-
-    $buildDir = Join-Path $ProjectRoot 'build\libs'
-    $jar = Get-ChildItem -Path $buildDir -Filter 'DercoVisuals-*.jar' -File |
-        Where-Object { $_.Name -notlike '*-sources.jar' -and $_.Name -notlike '*-dev.jar' } |
-        Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if (-not $jar) { throw 'Gradle completed but no distributable DercoVisuals JAR was found.' }
-    Install-Mod $jar.FullName
     Open-MinecraftLauncher
     Write-Host "`nDercoVisuals is installed. Select your Fabric 1.21.11 profile in Minecraft Launcher." -ForegroundColor Green
 } catch {

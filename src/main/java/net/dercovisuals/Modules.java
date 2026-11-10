@@ -8,28 +8,34 @@ public final class Modules {
     private Modules() {}
 
     public static final Module INFO_HUD = new Module(
-            "info_hud", "Info HUD", "FPS, position and facing in a compact status panel.",
+            "info_hud", "Info panel", "Compact FPS and XYZ information for a quick overview.",
             ModuleCategory.HUD, "Always on screen", true);
     public static final Module ARMOR_HUD = new Module(
-            "armor_hud", "Armor HUD", "Displays equipped armor pieces and their durability.",
+            "armor_hud", "Armor display", "Shows equipped armor, item icons, and remaining durability.",
             ModuleCategory.HUD, "Bottom center", true);
     public static final Module KEYSTROKES = new Module(
-            "keystrokes", "Keystrokes", "Shows movement keys with a pressed-state animation.",
+            "keystrokes", "Keystrokes", "Animated movement and jump keys with a pressed-state highlight.",
             ModuleCategory.HUD, "Bottom left", true);
     public static final Module MODULE_LIST = new Module(
-            "module_list", "Active modules", "A clean list of currently enabled DercoVisuals modules.",
+            "module_list", "Module list", "A minimal live list of enabled DercoVisuals modules.",
             ModuleCategory.HUD, "Top right", true);
     public static final Module COMPASS = new Module(
-            "compass", "Compass", "Displays the direction your player is facing.",
+            "compass", "Direction", "Displays the cardinal direction your player is facing.",
             ModuleCategory.HUD, "Top left", true);
     public static final Module CLOCK = new Module(
-            "clock", "World clock", "Shows your local system time on the HUD.",
+            "clock", "Local clock", "Shows the current local time in a compact HUD card.",
             ModuleCategory.HUD, "Top right", false);
+    public static final Module POTION_HUD = new Module(
+            "potion_hud", "Potion effects", "Lists active potion effects with amplifier and remaining time.",
+            ModuleCategory.HUD, "Left side", false);
+    public static final Module SPEED_HUD = new Module(
+            "speed_hud", "Speed meter", "Displays horizontal movement speed in blocks per second.",
+            ModuleCategory.HUD, "Bottom right", false);
 
     private static double savedGamma = 1.0;
     public static final Module FULLBRIGHT = new Module(
-            "fullbright", "Fullbright", "Raises in-game gamma while enabled and restores it when disabled.",
-            ModuleCategory.RENDER, "B", false) {
+            "fullbright", "Fullbright", "Raises world brightness while enabled and restores your previous gamma.",
+            ModuleCategory.VISUALS, "B", false) {
         @Override
         protected void onEnable() {
             MinecraftClient client = MinecraftClient.getInstance();
@@ -46,11 +52,12 @@ public final class Modules {
     private static int savedFov = 70;
     private static boolean zooming;
     public static final Module ZOOM = new Module(
-            "zoom", "Zoom", "Hold C to zoom in. Your original FOV is restored on release.",
+            "zoom", "Zoom", "Hold C to zoom in. Your original field of view is restored on release.",
             ModuleCategory.PLAYER, "Hold C", true);
 
     public static final List<Module> ALL = List.of(
-            INFO_HUD, ARMOR_HUD, KEYSTROKES, MODULE_LIST, COMPASS, CLOCK, FULLBRIGHT, ZOOM
+            INFO_HUD, ARMOR_HUD, KEYSTROKES, MODULE_LIST, COMPASS, CLOCK, POTION_HUD, SPEED_HUD,
+            FULLBRIGHT, ZOOM
     );
 
     public static void loadConfig() {

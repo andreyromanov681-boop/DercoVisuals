@@ -15,36 +15,6 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-      - name: Extract Pulse source archive for audit
-        shell: bash
-        run: |
-          test -f pulse-src.zip
-          mkdir -p /tmp/pulse-source-audit
-          unzip -q pulse-src.zip -d /tmp/pulse-source-audit
-          {
-            echo "# Pulse source archive inventory"
-            echo
-            echo "- Archive: pulse-src.zip"
-            echo "- Files: $(find /tmp/pulse-source-audit -type f | wc -l)"
-            echo "- Unpacked size: $(du -sh /tmp/pulse-source-audit | cut -f1)"
-            echo
-            echo "## Source file paths"
-            find /tmp/pulse-source-audit -type f | sed 's#^/tmp/pulse-source-audit/##' | sort
-            echo
-            echo "## Mine / event references for manual review"
-            grep -RniE "mine|quarry|shaft|mining.?event" /tmp/pulse-source-audit --include='*.java' --include='*.kt' --include='*.json' --include='*.xml' --include='*.yml' --include='*.yaml' --include='*.properties' || true
-          } > /tmp/pulse-source-audit/INVENTORY.md
-          cd /tmp
-          zip -qr pulse-source-audit.zip pulse-source-audit
-      - name: Upload Pulse source archive for review
-        uses: actions/upload-artifact@v4
-        with:
-          name: pulse-source-audit
-          path: |
-            /tmp/pulse-source-audit.zip
-            /tmp/pulse-source-audit/INVENTORY.md
-          if-no-files-found: error
-          retention-days: 7
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
