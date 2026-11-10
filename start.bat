@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Pulse - Launch Client
+title DercoVisuals - Launch Client
 
 echo ============================================
-echo   Pulse 1.0 - Launching Minecraft Fabric
+echo   DercoVisuals - Launching Minecraft Fabric
 echo ============================================
 echo.
 

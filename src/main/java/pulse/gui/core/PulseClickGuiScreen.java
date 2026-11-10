@@ -15,7 +15,6 @@ import pulse.animation.AnimationState;
 import pulse.animation.Easing;
 import pulse.client.MinecraftContext;
 import pulse.gui.config.ConfigsTab;
-import pulse.gui.events.EventsTab;
 import pulse.gui.friends.FriendsTab;
 import pulse.gui.markers.MarkersTab;
 import pulse.gui.modules.ModuleSettingsOverlay;
@@ -53,7 +52,7 @@ public class PulseClickGuiScreen extends Screen {
    private static long lastDebugPrint = 0L;
 
    public PulseClickGuiScreen() {
-      super(Text.literal("Pulse"));
+      super(Text.literal("DercoVisuals"));
       String.valueOf(Text.literal("crypt"));
       this.clickBtn = 0;
       this.m = ClickGuiTabType.MODULES;
@@ -69,7 +68,6 @@ public class PulseClickGuiScreen extends Screen {
       this.l.put(ClickGuiTabType.MODULES, new ModulesTab());
       this.l.put(ClickGuiTabType.MARKERS, new MarkersTab());
       this.l.put(ClickGuiTabType.FRIENDS, new FriendsTab());
-      this.l.put(ClickGuiTabType.EVENTS, new EventsTab());
       this.l.put(ClickGuiTabType.CONFIGS, new ConfigsTab());
       this.j = new DockPanelController(this);
       this.k = new ModuleSettingsOverlay(this);
@@ -448,9 +446,7 @@ public class PulseClickGuiScreen extends Screen {
       } else if (clickGuiTabA instanceof FriendsTab && ((FriendsTab)clickGuiTabA).a(c2, i)) {
          return true;
       } else {
-         return clickGuiTabA instanceof EventsTab && ((EventsTab)clickGuiTabA).a(c2, i)
-            ? true
-            : clickGuiTabA instanceof ConfigsTab && ((ConfigsTab)clickGuiTabA).a(c2, i);
+         return clickGuiTabA instanceof ConfigsTab && ((ConfigsTab)clickGuiTabA).a(c2, i);
       }
    }
 

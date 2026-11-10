@@ -12,12 +12,12 @@ res_dir = os.path.join(root_dir, "src", "main", "resources")
 libs_dir = os.path.join(root_dir, "libs")
 out_dir = os.path.join(root_dir, "build")
 classes_dir = os.path.join(out_dir, "classes")
-target_jar = os.path.join(out_dir, "PulseVisuals.jar")
+target_jar = os.path.join(out_dir, "DercoVisuals.jar")
 
 os.makedirs(classes_dir, exist_ok=True)
 
 print("=" * 50)
-print("  Pulse - Direct Builder")
+print("  DercoVisuals - Direct Builder")
 print("=" * 50)
 
 # 1. Resolve classpath
@@ -107,7 +107,7 @@ print("Compiling sources (this may take a few seconds)...")
 res = subprocess.run(cmd)
 
 # 4. Package JAR
-print("[3/3] Packaging PulseVisuals.jar...")
+print("[3/3] Packaging DercoVisuals.jar...")
 with zipfile.ZipFile(target_jar, "w", zipfile.ZIP_DEFLATED) as z:
     # Add compiled classes
     for r, d, files in os.walk(classes_dir):
@@ -126,8 +126,8 @@ with zipfile.ZipFile(target_jar, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(pl, f"META-INF/jars/{os.path.basename(pl)}")
 
 print(f"[SUCCESS] Built ready JAR: {target_jar}")
-# Copy to Pulse run folder if exists
-pulse_run_jar = r"c:\Users\user\Desktop\system 67\Pulse\run\PulseVisuals.jar"
+# Copy to DercoVisuals run folder if exists
+pulse_run_jar = r"c:\Users\user\Desktop\system 67\Pulse\run\DercoVisuals.jar"
 if os.path.exists(os.path.dirname(pulse_run_jar)):
     shutil.copy2(target_jar, pulse_run_jar)
-    print(f"[COPIED] Updated mod in Pulse/run/PulseVisuals.jar")
+    print(f"[COPIED] Updated mod in DercoVisuals/run/DercoVisuals.jar")

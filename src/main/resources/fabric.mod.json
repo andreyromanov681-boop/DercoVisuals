@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "id": "pulse",
-  "version": "1.0-SNAPSHOT",
-  "name": "pulse",
-  "description": "pulse client for Minecraft (no native protection stubbed)",
+  "version": "${version}",
+  "name": "DercoVisuals",
+  "description": "DercoVisuals client for Minecraft 1.21.11.",
   "authors": [
-    "You"
+    "enizer6569"
   ],
   "license": "All-Rights-Reserved",
   "icon": "assets/pulse/icon.png",
@@ -21,10 +21,10 @@
     "pulse.mixins.json"
   ],
   "depends": {
-    "fabricloader": "\u003e\u003d0.17.0",
+    "fabricloader": ">=0.18.1",
     "fabric": "*",
     "minecraft": "1.21.11",
-    "java": "\u003e\u003d21"
+    "java": ">=21"
   },
   "jars": [
     {

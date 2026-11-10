@@ -4,7 +4,6 @@ public enum ClickGuiTabType {
    MODULES("modules", "\ue916"),
    MARKERS("markers", "\ue915"),
    FRIENDS("friends", "\ue90d"),
-   EVENTS("events", "\ue90a"),
    CONFIGS("configs", "\ue905");
 
    private final String id;
