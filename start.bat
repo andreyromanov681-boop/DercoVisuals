@@ -8,11 +8,11 @@ echo   DercoVisuals - Launching Minecraft Fabric
 echo ============================================
 echo.
 
-if exist "..\Pulse\launch.ps1" (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "..\Pulse\launch.ps1"
+if exist "..\DercoVisuals\launch.ps1" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "..\DercoVisuals\launch.ps1"
     set "RC=%ERRORLEVEL%"
 ) else (
-    echo [ERROR] Launcher not found at ..\Pulse\launch.ps1
+    echo [ERROR] Launcher not found at ..\DercoVisuals\launch.ps1
     set "RC=1"
 )
 
