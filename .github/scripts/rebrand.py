@@ -21,7 +21,7 @@ def move_tree(source: Path, destination: Path, rename_classes: bool = True) -> N
     for old in sorted(p for p in source.rglob("*") if p.is_file()):
         parts = list(old.relative_to(source).parts)
         if rename_classes:
-            parts = [re.sub(r"^Pulse", "DercoVisuals", part) for part in parts]
+            parts = [part.replace("Pulse", "DercoVisuals") for part in parts]
         new = destination.joinpath(*parts)
         if new.exists():
             raise RuntimeError(f"Refusing to overwrite existing file: {new}")
@@ -134,6 +134,14 @@ def main() -> None:
     if com_root.exists() and not any(com_root.iterdir()):
         com_root.rmdir()
     move_tree(JAVA_ROOT / "aethereal", destination / "session")
+
+    # Rename all remaining project class filenames containing the old brand.
+    for old_path in sorted(destination.rglob("*")):
+        if old_path.is_file() and "Pulse" in old_path.name:
+            new_path = old_path.with_name(old_path.name.replace("Pulse", "DercoVisuals"))
+            if new_path.exists():
+                raise RuntimeError(f"Refusing to overwrite {new_path}")
+            old_path.rename(new_path)
 
     internal = destination / "internal"
     internal.mkdir(parents=True, exist_ok=True)
@@ -326,7 +334,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
       - name: Apply DercoVisuals namespace and Minecraft 1.21.11 port
         run: python .github/scripts/rebrand.py
       - name: Commit migration
