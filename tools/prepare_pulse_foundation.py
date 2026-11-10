@@ -34,6 +34,16 @@ for rel in ('pulse/gui/events',):
 for rel in ('pulse/TestMod.java',):
     (JAVA / rel).unlink(missing_ok=True)
 
+# Remove the two mine-specific marker aliases, while retaining the generic marker feature.
+for rel, phrase in (
+    ('pulse/markers/providers/ActiveEventMarkerProvider.java', 'смертельная шахта'),
+    ('pulse/markers/providers/EventsCommandMarkerProvider.java', 'пороховой карьер'),
+):
+    marker_file = JAVA / rel
+    if marker_file.exists():
+        lines = marker_file.read_text(encoding='utf-8').splitlines()
+        marker_file.write_text('\\n'.join(line for line in lines if phrase not in line) + '\\n', encoding='utf-8')
+
 # Remove Java-only experimental render test classes.
 for p in (JAVA / 'pulse' / 'render').glob('Test*.java'):
     p.unlink()
@@ -100,7 +110,7 @@ metadata.update({
     'entrypoints': {'main': ['net.dercovisuals.DercoVisuals']},
     'depends': {'fabricloader': '>=0.18.1', 'fabric': '*', 'minecraft': '~1.21.11', 'java': '>=21'}
 })
-metadata.pop('jars', None)
+metadata['jars'] = [{'file': f'META-INF/jars/{jar.name}'} for jar in sorted((UP / 'libs').glob('*.jar'))]
 metadata['mixins'] = ['dercovisuals.mixins.json'] if (SRC / 'resources' / 'dercovisuals.mixins.json').exists() else []
 meta.write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
 
