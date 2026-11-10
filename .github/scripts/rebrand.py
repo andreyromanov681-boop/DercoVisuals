@@ -234,11 +234,11 @@ def main() -> None:
     wrapper_path = ROOT / "gradle/wrapper/gradle-wrapper.properties"
     wrapper_text = wrapper_path.read_text(encoding="utf-8")
     wrapper_text = re.sub(
-        r"gradle-[0-9.]+-bin\\.zip",
+        r"gradle-[0-9.]+-bin\.zip",
         "gradle-9.8.1-bin.zip",
         wrapper_text
     )
-    wrapper_path.write_text(wrapper_text, encoding="utf-8", newline="\\n")
+    wrapper_path.write_text(wrapper_text, encoding="utf-8", newline="\n")
 
     gradle_path = ROOT / "build.gradle"
     gradle = gradle_path.read_text(encoding="utf-8")
