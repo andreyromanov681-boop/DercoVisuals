@@ -93,7 +93,7 @@ for p in (SRC / 'resources').rglob('*'):
     if p.is_file() and p.suffix.lower() in ('.json', '.fsh', '.vsh', '.frag', '.glsl', '.txt'):
         try: t = p.read_text(encoding='utf-8')
         except UnicodedecodeError: continue
-        t = t.replace('assets/pulse', 'assets/dercovisuals').replace('pulse:', 'dercovisuals:').replace('"pulse"', '"dercovisuals"')
+        t = t.replace('assets/pulse', 'assets/dercovisuals').replace('pulse:', 'dercovisuals:').replace('"pulse"', '"dercovisuals"').replace('ru.pulse', 'net.dercovisuals').replace('pulse.', 'net.dercovisuals.')
         t = t.replace('pulse.mixins.json', 'dercovisuals.mixins.json')
         p.write_text(t, encoding='utf-8')
 assets = SRC / 'resources' / 'assets'
