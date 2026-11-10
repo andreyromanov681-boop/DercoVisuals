@@ -32,16 +32,16 @@
 
 - The initial DercoVisuals source build and rolling-release workflow passed in GitHub Actions.
 - The Pulse extraction/inventory workflow succeeded and produced a short-lived audit artifact, which was inspected.
-- The current modular GUI/HUD refactor is awaiting a fresh GitHub Actions build before the updated `latest` JAR can be considered verified.
+- The expanded modular GUI/HUD revision at commit `5cc229a9447ea76acda04ed7ff8a17bc2cb0d4f4` compiled successfully in GitHub Actions. Its `Publish rolling latest release` and CI artifact upload steps also succeeded in run `42847480400`.
+- The `latest` release now contains `DercoVisuals-1.0.0.jar` (28,195 bytes).
 - JSON mod metadata and language resources were parsed locally.
 - The in-game visual layout, HUD positions, scrolling, and keybind behavior have not yet been manually tested inside Minecraft.
 
 ## Next tasks
 
-1. Check GitHub Actions for the modular GUI/HUD commit; fix compiler or mapping errors if present.
-2. Test the three-column GUI at 16:9 and smaller GUI scales; verify mouse-wheel scrolling.
-3. Verify Potion Effects, Speed HUD, armor durability, Fullbright restoration, and Zoom restoration in-game.
-4. Test `1.bat` both from a maintainer Git checkout and from a player-only folder; ensure the latter fetches only the release JAR.
+1. Test the three-column GUI at 16:9 and smaller GUI scales; verify mouse-wheel scrolling.
+2. Verify Potion Effects, Speed HUD, armor durability, Fullbright restoration, and Zoom restoration in-game.
+3. Test `1.bat` both from a maintainer Git checkout and from a player-only folder; ensure the latter fetches only the release JAR.
 
 ## Required note format for future AI sessions
 
