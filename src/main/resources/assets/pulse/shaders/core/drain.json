@@ -1,0 +1,8 @@
+{
+  "vertex": "pulse:core/shader_fog",
+  "fragment": "pulse:core/drain",
+  "samplers": [],
+  "uniforms": [
+    { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }
+  ]
+}
