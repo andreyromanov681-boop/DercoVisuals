@@ -1,0 +1,50 @@
+// Maintainer: enizer6569 (DercoVisuals). Original authorship and rights remain with their respective holders.
+package dev.enizer6569.dercovisuals.events;
+
+import org.joml.Matrix3x2fStack;
+
+public class HudRenderPreEvent extends DercoVisualsEvent {
+   private final Matrix3x2fStack matrices;
+   private final int width;
+   private final int height;
+   private final float tickDelta;
+
+   public HudRenderPreEvent(Matrix3x2fStack matrices, int i, int i2, float f) {
+      this.matrices = matrices;
+      this.width = i;
+      this.height = i2;
+      this.tickDelta = f;
+   }
+
+   public Matrix3x2fStack matrices() {
+      return this.matrices;
+   }
+
+   public int width() {
+      return this.width;
+   }
+
+   public int height() {
+      return this.height;
+   }
+
+   public float tickDelta() {
+      return this.tickDelta;
+   }
+
+   public Matrix3x2fStack a() {
+      return this.matrices;
+   }
+
+   public int b() {
+      return this.width;
+   }
+
+   public int c() {
+      return this.height;
+   }
+
+   public float d() {
+      return this.tickDelta;
+   }
+}

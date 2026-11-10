@@ -1,20 +1,23 @@
 # DercoVisuals
 
-Client-side Fabric project for Minecraft Java Edition **1.21.11**.
+Maintainer: enizer6569  
+Minecraft: Java Edition 1.21.11  
+Platform: Fabric  
+Java: 21
 
-- **Project name:** DercoVisuals
-- **Author metadata:** enizer6569
-- **Minecraft:** 1.21.11
-- **Java:** 21
-- **Fabric Loader:** 0.20.1
-- **Fabric API:** 0.141.6+1.21.11
+DercoVisuals is the maintained and ported project in this repository. Project-owned Java packages, entrypoints, mixin configuration, resources, and build outputs use the dev.enizer6569.dercovisuals / dercovisuals namespace.
 
 ## Build
 
-Run `./gradlew build` on macOS/Linux or `gradlew.bat build` on Windows.
+On Windows: .\gradlew.bat build  
+On Linux/macOS: bash ./gradlew build
 
-## Compatibility notes
+The Gradle output JAR is build/libs/DercoVisuals-1.0.0.jar.
 
-The project display name and distributable JAR name are DercoVisuals. The existing internal Java package and Fabric resource namespace `pulse` are intentionally retained so existing source references, mixins, textures, and saved configuration paths continue to work.
+## Compatibility
 
-The Events page has been removed from the click GUI. The shared internal event-dispatching package remains because other client features depend on it.
+This branch targets Minecraft 1.21.11, Fabric Loader 0.20.1, Fabric API 0.141.6+1.21.11, and Yarn 1.21.11+build.6.
+
+## Attribution
+
+enizer6569 is the maintainer and integrator of this fork. Inherited code and bundled visual/audio/font assets came from a codebase that used the Pulse/PulseVisuals identifiers. Their original authorship and rights remain with the respective rights holders; this repository does not imply a transfer of copyright or a new license. See ATTRIBUTION.md.

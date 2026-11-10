@@ -1,27 +1,27 @@
 {
   "schemaVersion": 1,
-  "id": "pulse",
-  "version": "${version}",
+  "id": "dercovisuals",
+  "version": "1.0.0",
   "name": "DercoVisuals",
   "description": "DercoVisuals client for Minecraft 1.21.11.",
   "authors": [
-    "enizer6569"
+    "enizer6569 (DercoVisuals maintainer)"
   ],
   "license": "All-Rights-Reserved",
-  "icon": "assets/pulse/icon.png",
+  "icon": "assets/dercovisuals/textures/logo.png",
   "environment": "client",
   "entrypoints": {
     "client": [],
     "main": [
-      "ru.pulse.Pulse",
-      "pulse.TestMod"
+      "dev.enizer6569.dercovisuals.DercoVisuals",
+      "dev.enizer6569.dercovisuals.TestMod"
     ]
   },
   "mixins": [
-    "pulse.mixins.json"
+    "dercovisuals.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.18.1",
+    "fabricloader": ">=0.20.1",
     "fabric": "*",
     "minecraft": "1.21.11",
     "java": ">=21"

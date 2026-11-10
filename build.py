@@ -105,6 +105,9 @@ cmd = [
 
 print("Compiling sources (this may take a few seconds)...")
 res = subprocess.run(cmd)
+if res.returncode != 0:
+    print('[ERROR] Compilation failed; packaging was cancelled.')
+    sys.exit(res.returncode)
 
 # 4. Package JAR
 print("[3/3] Packaging DercoVisuals.jar...")
@@ -127,7 +130,7 @@ with zipfile.ZipFile(target_jar, "w", zipfile.ZIP_DEFLATED) as z:
 
 print(f"[SUCCESS] Built ready JAR: {target_jar}")
 # Copy to DercoVisuals run folder if exists
-dercovisuals_run_jar = r"c:\Users\user\Desktop\system 67\DercoVisuals\run\DercoVisuals.jar"
+dercovisuals_run_jar = os.path.join(root_dir, "run", "DercoVisuals.jar")
 if os.path.exists(os.path.dirname(dercovisuals_run_jar)):
     shutil.copy2(target_jar, dercovisuals_run_jar)
     print(f"[COPIED] Updated mod in DercoVisuals/run/DercoVisuals.jar")

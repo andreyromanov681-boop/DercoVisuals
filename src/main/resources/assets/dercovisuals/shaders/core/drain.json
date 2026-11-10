@@ -1,0 +1,8 @@
+{
+  "vertex": "dercovisuals:core/shader_fog",
+  "fragment": "dercovisuals:core/drain",
+  "samplers": [],
+  "uniforms": [
+    { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }
+  ]
+}

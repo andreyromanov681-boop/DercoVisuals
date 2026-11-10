@@ -1,8 +1,0 @@
-{
-  "vertex": "pulse:core/shader_fog",
-  "fragment": "pulse:core/nebula",
-  "samplers": [],
-  "uniforms": [
-    { "name": "ShaderFogData", "type": "uniform_buffer", "count": 1 }
-  ]
-}
