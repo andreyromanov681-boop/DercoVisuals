@@ -3,7 +3,7 @@
 Maintainer: enizer6569  
 Minecraft: Java Edition 1.21.11  
 Platform: Fabric  
-Java: 21
+Java toolchain: 25 for the Gradle/Loom build; the mod bytecode target remains Java 21.
 
 DercoVisuals is the maintained and ported project in this repository. Project-owned Java packages, entrypoints, mixin configuration, resources, and build outputs use the dev.enizer6569.dercovisuals / dercovisuals namespace.
 
