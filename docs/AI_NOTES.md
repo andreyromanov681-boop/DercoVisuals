@@ -35,7 +35,8 @@
 - The expanded modular GUI/HUD revision at commit `5cc229a9447ea76acda04ed7ff8a17bc2cb0d4f4` compiled successfully in GitHub Actions. Its `Publish rolling latest release` and CI artifact upload steps also succeeded in run `42847480400`.
 - The `latest` release now contains `DercoVisuals-1.0.0.jar` (28,195 bytes).
 - JSON mod metadata and language resources were parsed locally.
-- The in-game visual layout, HUD positions, scrolling, and keybind behavior have not yet been manually tested inside Minecraft.
+- Local Gradle could not resolve `services.gradle.org` in this environment (`curl: (6) Could not resolve host`), so the new Minecraft API calls must be checked by GitHub Actions.
+- The in-game visual layout, HUD positions, scrolling, inventory preview, cooldown progress, and keybind behavior have not yet been manually tested inside Minecraft.
 
 ## Next tasks
 

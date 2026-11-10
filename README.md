@@ -6,7 +6,7 @@ The project is maintained for players first: no paid features, subscriptions, te
 ## What is included
 
 - A redesigned modular GUI with category navigation, module cards, status indicators, and a details panel.
-- HUD: FPS and coordinates, armor durability, animated keystrokes, active-module list, compass, local clock, potion effects, and movement speed.
+- HUD: FPS and coordinates, armor durability, animated keystrokes, active-module list, compass, local clock, potion effects, movement speed, inventory preview, totem counter, food/saturation bars, and active item cooldown indicators.
 - Visuals: Fullbright toggle with gamma restoration.
 - Player: hold-to-zoom.
 - Module states saved in `config/dercovisuals.properties`.

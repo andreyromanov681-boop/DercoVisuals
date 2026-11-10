@@ -12,9 +12,11 @@ The review identified the following broad architectural ideas:
 - compact module cards arranged in a grid;
 - a separate inspector for the selected module;
 - typed settings widgets and persistent module state;
-- independently positioned HUD elements.
+- independently positioned HUD elements;
+- inventory contents preview and item durability/count overlays;
+- totem counting, hunger/saturation status, and item cooldown indicators.
 
-DercoVisuals now implements its own category rail, three-column module-card grid, inspector, toggle behavior, scroll handling, and HUD widgets. No Pulse Java class or proprietary implementation was copied into the DercoVisuals build.
+DercoVisuals now implements its own category rail, three-column module-card grid, inspector, toggle behavior, scroll handling, and HUD widgets. The current extension independently implements an inventory preview, a totem counter, food/saturation bars, and active item-cooldown indicators using Minecraft 1.21.11 APIs. No Pulse Java class, bundled library, asset, or proprietary implementation was copied into the DercoVisuals build.
 
 ## Compatibility and rights warning
 
