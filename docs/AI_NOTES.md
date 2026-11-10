@@ -47,3 +47,19 @@
 ## Required note format for future AI sessions
 
 Append a dated entry with assistant/tool identity, files changed, behavior changed, build/test result, unresolved issues, and exact next action. Never overwrite previous handoff entries.
+
+
+---
+
+## 2026-11-10 — Pulse foundation migration started
+
+- User confirmed that the Pulse source authors granted permission to use the archive as the project base; no written proof was available in the chat. Treat that as user-provided authorization context, and preserve any author attribution/conditions if they are later supplied.
+- Created development branch `pulse-foundation`; stable `main` and its current release are intentionally untouched until the new base builds and is reviewed.
+- Added `tools/prepare_pulse_foundation.py`. It unpacks the existing `pulse-src.zip` during developer/CI builds, rebrands Java package/class identifiers and resource namespace to DercoVisuals, and keeps the archive untouched.
+- Replaced the upstream account/backend bootstrap with a local-first DercoVisuals entrypoint. The account helper types remain in the source tree for compile compatibility, but the new entrypoint does not initialize remote login or Discord RPC.
+- Removed the mine-events GUI tab and event panel from the generated tree; added removal of the two mine/quarry marker aliases. Generic marker, event-bus, module, settings, HUD, and rendering architecture is retained.
+- Removed Pulse test harnesses and experimental Test render classes from the generated player source set.
+- Updated Gradle dependencies for Lombok and bundled helper libraries. Added a CI workflow for the `pulse-foundation` branch; it generates sources from the archive and compiles against Minecraft 1.21.11 / Java 21.
+- Initial CI run was superseded while the migration script was corrected. The latest workflow run must be checked for extraction and compilation errors.
+- Important: this is a migration bootstrap, not a finished port. The upstream project configuration targets Minecraft 1.21.4 while its metadata claims 1.21.11, so API/mixin incompatibilities are expected and must be fixed iteratively. Do not publish this branch as the `latest` player release until CI passes and in-game smoke tests succeed.
+- Next: inspect the current CI logs; fix the first compile/mixin errors; replace Pulse visual branding in the GUI; verify every module category; audit all remaining event/marker code for mine-specific behavior; keep `main` stable until the new branch is ready.
