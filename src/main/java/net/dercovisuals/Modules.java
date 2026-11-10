@@ -32,6 +32,19 @@ public final class Modules {
             "speed_hud", "Speed meter", "Displays horizontal movement speed in blocks per second.",
             ModuleCategory.HUD, "Bottom right", false);
 
+    public static final Module INVENTORY_HUD = new Module(
+            "inventory_hud", "Inventory preview", "A live 3 by 9 preview of your main inventory with item counts and durability.",
+            ModuleCategory.HUD, "Above hotbar", false);
+    public static final Module TOTEMS_HUD = new Module(
+            "totems_hud", "Totem counter", "Counts Totems of Undying in your inventory and offhand.",
+            ModuleCategory.HUD, "Bottom right", false);
+    public static final Module SATURATION_HUD = new Module(
+            "saturation_hud", "Food status", "Shows your food level and saturation as separate readable bars.",
+            ModuleCategory.HUD, "Left side", false);
+    public static final Module COOLDOWNS_HUD = new Module(
+            "cooldowns_hud", "Cooldown tracker", "Shows active item cooldowns with item icons and remaining progress.",
+            ModuleCategory.HUD, "Top center", false);
+
     private static double savedGamma = 1.0;
     public static final Module FULLBRIGHT = new Module(
             "fullbright", "Fullbright", "Raises world brightness while enabled and restores your previous gamma.",
@@ -57,6 +70,7 @@ public final class Modules {
 
     public static final List<Module> ALL = List.of(
             INFO_HUD, ARMOR_HUD, KEYSTROKES, MODULE_LIST, COMPASS, CLOCK, POTION_HUD, SPEED_HUD,
+            INVENTORY_HUD, TOTEMS_HUD, SATURATION_HUD, COOLDOWNS_HUD,
             FULLBRIGHT, ZOOM
     );
 
