@@ -42,7 +42,7 @@ for rel, phrase in (
     marker_file = JAVA / rel
     if marker_file.exists():
         lines = marker_file.read_text(encoding='utf-8').splitlines()
-        marker_file.write_text('\\n'.join(line for line in lines if phrase not in line) + '\\n', encoding='utf-8')
+        marker_file.write_text('\n'.join(line for line in lines if phrase not in line) + '\n', encoding='utf-8')
 
 # Remove Java-only experimental render test classes.
 for p in (JAVA / 'pulse' / 'render').glob('Test*.java'):
