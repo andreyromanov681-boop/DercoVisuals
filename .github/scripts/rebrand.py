@@ -317,57 +317,8 @@ The enizer6569 maintainer comments identify who maintains this fork; they are no
         newline="\n"
     )
 
-    workflow = ROOT / ".github/workflows/build.yml"
-    workflow.parent.mkdir(parents=True, exist_ok=True)
-    workflow.write_text(
-        """name: Build DercoVisuals
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  rebrand-and-build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '25'
-      - name: Apply DercoVisuals namespace and Minecraft 1.21.11 port
-        run: python .github/scripts/rebrand.py
-      - name: Commit migration
-        run: |
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git config user.name "enizer6569"
-            git config user.email "enizer6569@users.noreply.github.com"
-            git add -A
-            git commit -m "Move DercoVisuals to enizer6569 namespace and Minecraft 1.21.11"
-            git push origin HEAD:main
-          fi
-      - name: Build with Gradle
-        run: bash ./gradlew build --no-daemon
-      - name: Upload mod artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: DercoVisuals-1.21.11
-          path: build/libs/*.jar
-          if-no-files-found: error
-""",
-        encoding="utf-8",
-        newline="\n"
-    )
+    # GitHub Actions workflow is maintained separately. Do not rewrite .github/workflows
+    # from this job: the workflow token intentionally has no `workflows` permission.
     print("DercoVisuals namespace and Minecraft 1.21.11 preparation applied.")
 
 if __name__ == "__main__":
