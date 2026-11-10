@@ -6,13 +6,12 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
-base {
-    archivesName = project.archives_base_name
-}
+base { archivesName = project.archives_base_name }
 
 repositories {
     maven { url = 'https://maven.fabricmc.net/' }
     mavenCentral()
+    maven { url = 'https://jitpack.io/' }
 }
 
 dependencies {
@@ -20,13 +19,15 @@ dependencies {
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    compileOnly 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
 }
 
 processResources {
     inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') {
-        expand 'version': inputs.properties.version
-    }
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -41,7 +42,6 @@ java {
 }
 
 jar {
-    from('LICENSE') {
-        rename { "${it}_${project.base.archivesName.get()}" }
-    }
+    from('LICENSE') { rename { "${it}_${project.base.archivesName.get()}" } }
+    into('META-INF/jars') { from fileTree(dir: 'libs', include: ['*.jar']) }
 }
