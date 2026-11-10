@@ -127,7 +127,7 @@ with zipfile.ZipFile(target_jar, "w", zipfile.ZIP_DEFLATED) as z:
 
 print(f"[SUCCESS] Built ready JAR: {target_jar}")
 # Copy to DercoVisuals run folder if exists
-pulse_run_jar = r"c:\Users\user\Desktop\system 67\Pulse\run\DercoVisuals.jar"
-if os.path.exists(os.path.dirname(pulse_run_jar)):
-    shutil.copy2(target_jar, pulse_run_jar)
+dercovisuals_run_jar = r"c:\Users\user\Desktop\system 67\DercoVisuals\run\DercoVisuals.jar"
+if os.path.exists(os.path.dirname(dercovisuals_run_jar)):
+    shutil.copy2(target_jar, dercovisuals_run_jar)
     print(f"[COPIED] Updated mod in DercoVisuals/run/DercoVisuals.jar")
