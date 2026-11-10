@@ -40,11 +40,6 @@ Keybinds can be changed in Minecraft Controls.
 The distributable JAR is written to `build/libs/DercoVisuals-1.0.0.jar`.
 
 ## Publishing a release
-Push source changes to `main`, then create and push a version tag, for example:
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-GitHub Actions builds the project and attaches the distributable JAR to a GitHub Release.
+Push source changes to `main`. GitHub Actions builds the project after each push to `main` and updates the rolling `latest` release with the distributable JAR. Version tags such as `v1.0.0` create separate versioned releases.
 
 Read [AGENTS.md](AGENTS.md), [CONTRIBUTORS.md](CONTRIBUTORS.md), and [LICENSE](LICENSE) before contributing. Keep the project free for players, preserve the lightweight source-only repository structure, and document changes for future maintainers.

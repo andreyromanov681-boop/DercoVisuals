@@ -14,7 +14,7 @@
 - Added Compass and World Clock HUD modules; retained Info HUD, Armor HUD, Keystrokes, Active Modules, Fullbright, and Zoom.
 - Added Russian and English keybind translations.
 - Added project rules, AI handoff instructions, contributor acknowledgements, and a community license.
-- Added a Windows `1.bat` workflow and GitHub Actions build/release workflows.
+- Added a Windows `1.bat` workflow and GitHub Actions build workflow that updates the rolling `latest` GitHub Release after a successful build, plus a tagged-release workflow.
 
 ## Removed features / archive limitation
 - No mine-event code existed in the attached 8.5 KB starter archive, so there was no mine-event handler to remove in those files.
@@ -23,12 +23,13 @@
 ## Verification status
 - Source and metadata were inspected from the attached starter ZIP.
 - Project structure and source were generated in this revision.
-- A full Gradle build could not be run in this environment: Gradle is not installed and outbound dependency downloads are unavailable.
-- The first successful GitHub Actions run should be treated as the required compiler/API verification. Check it before tagging a public release.
+- JSON metadata and translation files passed local parsing checks.
+- A full local Gradle build could not be run in this environment: Gradle is not installed and outbound dependency downloads are unavailable.
+- GitHub Actions build run for the first source commit was triggered; its compiler/API result must be checked before tagging a versioned release.
 
 ## Next maintainer tasks
-1. Run `1.bat` from a real clone with GitHub push access and Java 21 installed.
-2. Check the GitHub Actions build result. Fix any mapping/API compile errors before release.
+1. Run `1.bat` from a real clone with Java 21 installed.
+2. Check the GitHub Actions build result. Fix any mapping/API compile errors before tagging a public release.
 3. Test the menu at 16:9 and smaller window sizes; add scroll support if the module library grows beyond the visible area.
 4. Test Fullbright restore and Zoom restore after toggling, screen changes, and disconnects.
 5. Ask the owner for an unpacked `pulse-src.zip` tree if visuals/features from that archive still need to be integrated or mine events need a precise removal audit.
