@@ -119,6 +119,11 @@ public class DercoVisualsClient implements ClientModInitializer {
             }
         }
 
+        if (Modules.SATURATION_HUD.isEnabled()) {
+            ExtraHudRenderer.renderFoodStatus(context, client, leftColumnY);
+            leftColumnY += 50;
+        }
+
         if (Modules.MODULE_LIST.isEnabled()) {
             int y = 8;
             for (Module module : Modules.ALL) {
@@ -145,8 +150,20 @@ public class DercoVisualsClient implements ClientModInitializer {
             context.drawTextWithShadow(client.textRenderer, label, x + 9, y + 7, AQUA);
         }
 
+        if (Modules.COOLDOWNS_HUD.isEnabled()) {
+            ExtraHudRenderer.renderCooldowns(context, client, screenWidth);
+        }
+
+        if (Modules.INVENTORY_HUD.isEnabled()) {
+            ExtraHudRenderer.renderInventory(context, client, screenWidth, screenHeight);
+        }
+
         if (Modules.ARMOR_HUD.isEnabled()) {
             renderArmor(context, client, screenWidth, screenHeight);
+        }
+
+        if (Modules.TOTEMS_HUD.isEnabled()) {
+            ExtraHudRenderer.renderTotemCounter(context, client, screenWidth, screenHeight);
         }
 
         if (Modules.SPEED_HUD.isEnabled()) {
