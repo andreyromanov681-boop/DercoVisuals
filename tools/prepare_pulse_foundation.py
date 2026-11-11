@@ -154,6 +154,11 @@ for p in sorted(list(java_root.rglob('*.java'))):
     source = p.read_text(encoding='utf-8', errors='replace')
     package_match = re.search(r'^\s*package\s+([A-Za-z0-9_.]+)\s*;', source, re.M)
     if not package_match:
+        # Default-package scratch/test sources at the archive root are not valid
+        # Fabric mod sources and cannot be referenced from packaged Java code.
+        if p.parent == java_root:
+            p.unlink()
+            continue
         raise SystemExit(f'Java source has no package declaration: {p.relative_to(ROOT)}')
     target = java_root.joinpath(*package_match.group(1).split('.'), p.name)
     if target != p:
