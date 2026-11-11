@@ -227,8 +227,7 @@ for p in sorted(java_root.rglob('*.java')):
     if p.parent.name == 'mixin':
         # Mixin source classes are transformed into their target classes at runtime.
         # Cast through Object so javac accepts the mixin/target type relationship.
-        source = re.sub(r'\(\(([A-Za-z0-9_$.<>?]+)\)this\)', r'((\1)(Object)this)', source)
-        source = re.sub(r'\(([A-Za-z0-9_$.<>?]+)\)this\b', r'(\1)(Object)this', source)
+        source = re.sub(r'\((?!Object\))([A-Za-z0-9_$.<>?]+)\)this\b', r'(\1)(Object)this', source)
         source = source.replace('this instanceof ', '((Object)this) instanceof ')
         source = source.replace('this == ', '(Object)this == ')
     p.write_text(source, encoding='utf-8')
