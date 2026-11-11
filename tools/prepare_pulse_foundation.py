@@ -197,6 +197,15 @@ API_REPLACEMENTS = (
     ('.comp_3626()', '.id()'),
     ('.comp_3627()', '.texturePath()'),
     ('.comp_750()', '.vertexCount()'),
+    ('.comp_3159()', '.forward()'),
+    ('.comp_3160()', '.backward()'),
+    ('.comp_3161()', '.left()'),
+    ('.comp_3162()', '.right()'),
+    ('.comp_3163()', '.jump()'),
+    ('.comp_3164()', '.sneak()'),
+    ('.comp_3165()', '.sprint()'),
+    ('.comp_2127()', '.name()'),
+    ('.comp_4932()', '.pos()'),
 )
 for p in sorted(java_root.rglob('*.java')):
     source = p.read_text(encoding='utf-8', errors='replace')
@@ -213,11 +222,15 @@ for p in sorted(java_root.rglob('*.java')):
         'import net.minecraft.client.util.math.MatrixStack.Entry;\n',
         'import net.minecraft.client.util.math.MatrixStack;\n'
     )
-    if p.name == 'GameRendererMixin.java':
-        source = source.replace('((GameRenderer)this)', '((GameRenderer)(Object)this)')
-    if p.name == 'HandledScreenMixin.java':
-        source = source.replace('(HandledScreen)this', '(HandledScreen)(Object)this')
-        source = source.replace('(HandledScreen<?>)this', '(HandledScreen<?>)(Object)this')
+    if p.name in ('MaceHelperHandConsumer.java', 'CustomHandShaderConsumer.java'):
+        source = source.replace('super.quad(', 'VertexConsumer.super.quad(')
+    if p.parent.name == 'mixin':
+        # Mixin source classes are transformed into their target classes at runtime.
+        # Cast through Object so javac accepts the mixin/target type relationship.
+        source = re.sub(r'\\(\\(([A-Za-z0-9_$.<>?]+)\\)this\\)', r'((\\1)(Object)this)', source)
+        source = re.sub(r'\\(([A-Za-z0-9_$.<>?]+)\\)this\\b', r'(\\1)(Object)this', source)
+        source = source.replace('this instanceof ', '((Object)this) instanceof ')
+        source = source.replace('this == ', '(Object)this == ')
     p.write_text(source, encoding='utf-8')
 
 # The old device-login and Discord IPC clients are not referenced by the local-only
@@ -263,6 +276,22 @@ patch_generated_java('net/dercovisuals/gui/modules/ModulesTab.java', (
      'Comparator.comparing((ModulesTab.ModuleEntry moduleEntry) -> moduleEntry.a().toLowerCase())'),
     ('Comparator.comparing(moduleEntry2 -> moduleEntry2.a().toLowerCase())',
      'Comparator.comparing((ModulesTab.ModuleEntry moduleEntry2) -> moduleEntry2.a().toLowerCase())'),
+))
+patch_generated_java('net/dercovisuals/effects/ParticleRenderService.java', (
+    ('final float rotation = ThreadLocalRandom.current().nextFloat() * 360.0F;',
+     'float rotation = ThreadLocalRandom.current().nextFloat() * 360.0F;'),
+    ('''(new Vec3d(Math.sin(this.wobblePhase) * this.wobbleAmplitude, 0.0, Math.cos(this.wobblePhase) * this.wobbleAmplitude)).pos = this.pos
+               .add(this);''',
+     '''this.pos = this.pos.add(new Vec3d(
+               Math.sin(this.wobblePhase) * this.wobbleAmplitude,
+               0.0,
+               Math.cos(this.wobblePhase) * this.wobbleAmplitude
+            ));'''),
+))
+patch_generated_java('net/dercovisuals/mixin/DebugHudMixin.java', (
+    ('''((List)callbackInfoReturnable.getReturnValue()).stream().filter(o -> {
+            String str = (String)o;''',
+     '''callbackInfoReturnable.getReturnValue().stream().filter((String str) -> {'''),
 ))
 
 # Do not port automated attack logic. Remove the module and unregister it cleanly.
