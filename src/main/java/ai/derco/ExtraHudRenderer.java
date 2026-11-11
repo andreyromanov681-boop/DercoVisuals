@@ -1,4 +1,4 @@
-package net.dercovisuals;
+package ai.derco;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;

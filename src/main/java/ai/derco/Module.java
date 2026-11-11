@@ -1,4 +1,4 @@
-package net.dercovisuals;
+package ai.derco;
 
 public class Module {
     public final String id;

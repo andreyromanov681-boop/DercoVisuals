@@ -11,7 +11,7 @@
   "license": "LicenseRef-DercoVisuals-Community",
   "environment": "client",
   "entrypoints": {
-    "client": ["net.dercovisuals.DercoVisualsClient"]
+    "client": ["ai.derco.DercoVisualsClient"]
   },
   "depends": {
     "fabricloader": ">=0.18.1",

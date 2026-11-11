@@ -1,4 +1,4 @@
-package net.dercovisuals;
+package ai.derco;
 
 import net.fabricmc.loader.api.FabricLoader;
 

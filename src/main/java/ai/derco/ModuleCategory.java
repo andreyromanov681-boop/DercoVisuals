@@ -1,4 +1,4 @@
-package net.dercovisuals;
+package ai.derco;
 
 public enum ModuleCategory {
     VISUALS("Visuals", "Visual effects and rendering"),
