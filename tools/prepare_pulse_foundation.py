@@ -134,8 +134,8 @@ YARN_OUTER_PACKAGES = {
 java_root = SRC / 'java'
 for p in sorted(java_root.rglob('*.java')):
     source = p.read_text(encoding='utf-8', errors='replace')
-    source = source.replace('ru.pulse', 'net.dercovisuals')
-    source = source.replace('pulse.', 'net.dercovisuals.')
+    source = source.replace('ru.pulse', 'ai.derco')
+    source = source.replace('pulse.', 'ai.derco.')
     source = source.replace('Pulse', 'DercoVisuals')
     for intermediary, named in NESTED_YARN_TYPES.items():
         source = re.sub(rf'\b{intermediary}\b', named, source)
@@ -235,8 +235,8 @@ for p in sorted(java_root.rglob('*.java')):
 # The old device-login and Discord IPC clients are not referenced by the local-only
 # foundation bootstrap. Keep the unrelated cosmetic renderer in the discord package.
 for rel in (
-    'net/dercovisuals/auth/DeviceAuthClient.java',
-    'net/dercovisuals/discord/DercoVisualsDiscordRPC.java',
+    'ai/derco/auth/DeviceAuthClient.java',
+    'ai/derco/discord/DercoVisualsDiscordRPC.java',
 ):
     (java_root / rel).unlink(missing_ok=True)
 
@@ -252,23 +252,23 @@ def patch_generated_java(relative_path, replacements):
     path.write_text(source, encoding='utf-8')
 
 # Restore collection element types lost by the upstream decompiler.
-patch_generated_java('net/dercovisuals/discord/CosmeticHelper.java', (
+patch_generated_java('ai/derco/discord/CosmeticHelper.java', (
     ('Map var7 = CosmeticRepository.a().b();',
      'Map<Integer, CosmeticModel> var7 = CosmeticRepository.a().b();'),
 ))
-patch_generated_java('net/dercovisuals/hud/elements/HotkeysHudElement.java', (
+patch_generated_java('ai/derco/hud/elements/HotkeysHudElement.java', (
     ('private List<HotkeysHudElement.HotkeySnapshot> x() {\n      ArrayList arrayList = new ArrayList();',
      'private List<HotkeysHudElement.HotkeySnapshot> x() {\n      ArrayList<HotkeysHudElement.HotkeySnapshot> arrayList = new ArrayList<>();'),
 ))
-patch_generated_java('net/dercovisuals/hud/elements/PotionsHudElement.java', (
+patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
     ('private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList arrayList = new ArrayList();',
      'private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList<PotionsHudElement.EffectEntry> arrayList = new ArrayList<>();'),
 ))
-patch_generated_java('net/dercovisuals/gui/settings/ModeSettingWidget.java', (
+patch_generated_java('ai/derco/gui/settings/ModeSettingWidget.java', (
     ('ArrayList arrayList = new ArrayList<>(this.v);',
      'ArrayList<Integer> arrayList = new ArrayList<>(this.v);'),
 ))
-patch_generated_java('net/dercovisuals/gui/modules/ModulesTab.java', (
+patch_generated_java('ai/derco/gui/modules/ModulesTab.java', (
     ('ArrayList arrayList = new ArrayList();',
      'ArrayList<ModulesTab.ModuleEntry> arrayList = new ArrayList<>();'),
     ('Comparator.comparing(moduleEntry -> moduleEntry.a().toLowerCase())',
@@ -276,7 +276,7 @@ patch_generated_java('net/dercovisuals/gui/modules/ModulesTab.java', (
     ('Comparator.comparing(moduleEntry2 -> moduleEntry2.a().toLowerCase())',
      'Comparator.comparing((ModulesTab.ModuleEntry moduleEntry2) -> moduleEntry2.a().toLowerCase())'),
 ))
-patch_generated_java('net/dercovisuals/effects/ParticleRenderService.java', (
+patch_generated_java('ai/derco/effects/ParticleRenderService.java', (
     ('final float rotation = ThreadLocalRandom.current().nextFloat() * 360.0F;',
      'float rotation = ThreadLocalRandom.current().nextFloat() * 360.0F;'),
     ('''(new Vec3d(Math.sin(this.wobblePhase) * this.wobbleAmplitude, 0.0, Math.cos(this.wobblePhase) * this.wobbleAmplitude)).pos = this.pos
@@ -287,31 +287,31 @@ patch_generated_java('net/dercovisuals/effects/ParticleRenderService.java', (
                Math.cos(this.wobblePhase) * this.wobbleAmplitude
             ));'''),
 ))
-patch_generated_java('net/dercovisuals/mixin/DebugHudMixin.java', (
+patch_generated_java('ai/derco/mixin/DebugHudMixin.java', (
     ('''((List)callbackInfoReturnable.getReturnValue()).stream().filter(o -> {
             String str = (String)o;''',
      '''callbackInfoReturnable.getReturnValue().stream().filter((String str) -> {'''),
 ))
 
 # Exclude the weapon-specific Mace helper and all of its visual hooks.
-(java_root / 'net/dercovisuals/modules/utilities/MaceHelper.java').unlink(missing_ok=True)
-(java_root / 'net/dercovisuals/render/MaceHelperHandConsumer.java').unlink(missing_ok=True)
-patch_generated_java('net/dercovisuals/module/ModuleRegistry.java', (
-    ('import net.dercovisuals.modules.utilities.MaceHelper;\n', ''),
+(java_root / 'ai/derco/modules/utilities/MaceHelper.java').unlink(missing_ok=True)
+(java_root / 'ai/derco/render/MaceHelperHandConsumer.java').unlink(missing_ok=True)
+patch_generated_java('ai/derco/module/ModuleRegistry.java', (
+    ('import ai.derco.modules.utilities.MaceHelper;\n', ''),
     ('   public static final MaceHelper MACE_HELPER = new MaceHelper();\n', ''),
     ('         MACE_HELPER,\n', ''),
 ))
-patch_generated_java('net/dercovisuals/render/HandRenderState.java', (
+patch_generated_java('ai/derco/render/HandRenderState.java', (
     ('   public static boolean renderingMace = false;\n', ''),
 ))
-patch_generated_java('net/dercovisuals/mixin/HeldItemRendererMixin.java', (
-    ('import net.dercovisuals.modules.utilities.MaceHelper;\n', ''),
+patch_generated_java('ai/derco/mixin/HeldItemRendererMixin.java', (
+    ('import ai.derco.modules.utilities.MaceHelper;\n', ''),
     ('      HandRenderState.renderingMace = MaceHelper.isMace(ItemStackVar);\n', ''),
     ('         HandRenderState.renderingMace = false;\n', ''),
 ))
-patch_generated_java('net/dercovisuals/mixin/ItemRendererMixin.java', (
-    ('import net.dercovisuals.modules.utilities.MaceHelper;\n', ''),
-    ('import net.dercovisuals.render.MaceHelperHandConsumer;\n', ''),
+patch_generated_java('ai/derco/mixin/ItemRendererMixin.java', (
+    ('import ai.derco.modules.utilities.MaceHelper;\n', ''),
+    ('import ai.derco.render.MaceHelperHandConsumer;\n', ''),
     ('''      MaceHelper maceHelper = ModuleRegistry.MACE_HELPER;
       if ((HandRenderState.renderingMace || HandRenderState.renderingHand)
          && maceHelper != null
@@ -344,8 +344,8 @@ patch_generated_java('net/dercovisuals/mixin/ItemRendererMixin.java', (
 
 ''', ''),
 ))
-patch_generated_java('net/dercovisuals/mixin/DrawContextMixin.java', (
-    ('import net.dercovisuals.modules.utilities.MaceHelper;\n', ''),
+patch_generated_java('ai/derco/mixin/DrawContextMixin.java', (
+    ('import ai.derco.modules.utilities.MaceHelper;\n', ''),
     ('      MaceHelper maceHelper = ModuleRegistry.MACE_HELPER;\n', ''),
     ('''      if (maceHelper != null && maceHelper.k() && maceHelper.hotbarHighlight.get() && MaceHelper.isMace(ItemStackVar)) {
          Color colorA = MaceHelper.getChargeColor();
@@ -360,10 +360,10 @@ patch_generated_java('net/dercovisuals/mixin/DrawContextMixin.java', (
 ))
 
 # Do not port automated attack logic. Remove the module and unregister it cleanly.
-trigger_bot = java_root / 'net/dercovisuals/modules/utilities/TriggerBot.java'
+trigger_bot = java_root / 'ai/derco/modules/utilities/TriggerBot.java'
 trigger_bot.unlink(missing_ok=True)
-patch_generated_java('net/dercovisuals/module/ModuleRegistry.java', (
-    ('import net.dercovisuals.modules.utilities.TriggerBot;\n', ''),
+patch_generated_java('ai/derco/module/ModuleRegistry.java', (
+    ('import ai.derco.modules.utilities.TriggerBot;\n', ''),
     ('   public static final TriggerBot TRIGGER_BOT = new TriggerBot();\n', ''),
     ('         KILL_EFFECT,\n         TRIGGER_BOT\n', '         KILL_EFFECT\n'),
 ))
@@ -371,9 +371,9 @@ patch_generated_java('net/dercovisuals/module/ModuleRegistry.java', (
 # EntityFinder deliberately returns Entity; each predicate below already narrows to
 # PlayerEntity, so cast only after the result has passed that predicate.
 for relative_path in (
-    'net/dercovisuals/modules/utilities/HwHelper.java',
-    'net/dercovisuals/modules/utilities/FtHelper.java',
-    'net/dercovisuals/modules/utilities/FcHelper.java',
+    'ai/derco/modules/utilities/HwHelper.java',
+    'ai/derco/modules/utilities/FtHelper.java',
+    'ai/derco/modules/utilities/FcHelper.java',
 ):
     path = java_root / relative_path
     source = path.read_text(encoding='utf-8', errors='replace')
@@ -402,12 +402,12 @@ for relative_path in (
 
 # Player removal moved to PlayerRemoveS2CPacket in 1.21.11. Keep join/leave
 # notifications by handling the corresponding packet explicitly.
-player_list = java_root / 'net/dercovisuals/mixin/PlayerListMixin.java'
-player_list_source = '''package net.dercovisuals.mixin;
+player_list = java_root / 'ai/derco/mixin/PlayerListMixin.java'
+player_list_source = '''package ai.derco.mixin;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import net.dercovisuals.network.packet.s2c.play.PlayerRemoveS2CPacket;
+import ai.derco.network.packet.s2c.play.PlayerRemoveS2CPacket;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
@@ -418,9 +418,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.dercovisuals.events.EventBusService;
-import net.dercovisuals.events.PlayerJoinEvent;
-import net.dercovisuals.events.PlayerLeaveEvent;
+import ai.derco.events.EventBusService;
+import ai.derco.events.PlayerJoinEvent;
+import ai.derco.events.PlayerLeaveEvent;
 
 @Mixin(ClientPlayNetworkHandler.class)
 public class PlayerListMixin {
@@ -459,7 +459,7 @@ public class PlayerListMixin {
 }
 '''
 player_list_source = player_list_source.replace(
-    'net.dercovisuals.network.packet.s2c.play.PlayerRemoveS2CPacket',
+    'ai.derco.network.packet.s2c.play.PlayerRemoveS2CPacket',
     'net.minecraft.network.packet.s2c.play.PlayerRemoveS2CPacket'
 )
 player_list.write_text(player_list_source, encoding='utf-8')
@@ -468,7 +468,7 @@ for p in (SRC / 'resources').rglob('*'):
     if p.is_file() and p.suffix.lower() in ('.json', '.fsh', '.vsh', '.frag', '.glsl', '.txt'):
         try: t = p.read_text(encoding='utf-8')
         except UnicodedecodeError: continue
-        t = t.replace('assets/pulse', 'assets/dercovisuals').replace('pulse:', 'dercovisuals:').replace('"pulse"', '"dercovisuals"').replace('ru.pulse', 'net.dercovisuals').replace('pulse.', 'net.dercovisuals.')
+        t = t.replace('assets/pulse', 'assets/dercovisuals').replace('pulse:', 'dercovisuals:').replace('"pulse"', '"dercovisuals"').replace('ru.pulse', 'ai.derco').replace('pulse.', 'ai.derco.')
         t = t.replace('pulse.mixins.json', 'dercovisuals.mixins.json')
         p.write_text(t, encoding='utf-8')
 assets = SRC / 'resources' / 'assets'
@@ -482,7 +482,7 @@ metadata.update({
     'description': 'A free, modular, client-side visual suite for Minecraft 1.21.11.',
     'authors': ['enizer6569'], 'license': 'LicenseRef-DercoVisuals-Community',
     'environment': 'client',
-    'entrypoints': {'main': ['net.dercovisuals.DercoVisuals']},
+    'entrypoints': {'main': ['ai.derco.DercoVisuals']},
     'depends': {'fabricloader': '>=0.18.1', 'fabric': '*', 'minecraft': '~1.21.11', 'java': '>=21'}
 })
 metadata['jars'] = [{'file': f'META-INF/jars/{jar.name}'} for jar in sorted((UP / 'libs').glob('*.jar'))]
