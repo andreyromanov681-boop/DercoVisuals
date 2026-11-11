@@ -1,25 +1,23 @@
 # DercoVisuals
 
-**Author and project owner: enizer6569**  
+Maintainer: enizer6569  
 Minecraft: Java Edition 1.21.11  
 Platform: Fabric  
 Java: 21
 
-DercoVisuals is the personal project of enizer6569. The previous project alias has been retired; the current project name, author identity, Java namespace, resource namespace, and build outputs use DercoVisuals / enizer6569.
+DercoVisuals is the maintained and ported project in this repository. Project-owned Java packages, entrypoints, mixin configuration, resources, and build outputs use the dev.enizer6569.dercovisuals / dercovisuals namespace.
 
 ## Build
 
-On Windows: `./gradlew.bat build`  
-On Linux/macOS: `./gradlew build`
+On Windows: .\gradlew.bat build  
+On Linux/macOS: bash ./gradlew build
 
-The Gradle output JAR is `build/libs/DercoVisuals-1.0.0.jar`.
+The Gradle output JAR is build/libs/DercoVisuals-1.0.0.jar.
 
 ## Compatibility
 
 This branch targets Minecraft 1.21.11, Fabric Loader 0.20.1, Fabric API 0.141.6+1.21.11, and Yarn 1.21.11+build.6.
 
-## Ownership
+## Attribution
 
-Copyright © 2026 enizer6569. All rights reserved.
-
-The project identity and author attribution in this repository are enizer6569 / DercoVisuals. No third-party authorship is asserted by the retired project alias.
+enizer6569 is the maintainer and integrator of this fork. Inherited code and bundled visual/audio/font assets came from a codebase that used the Pulse/PulseVisuals identifiers. Their original authorship and rights remain with the respective rights holders; this repository does not imply a transfer of copyright or a new license. See ATTRIBUTION.md.
