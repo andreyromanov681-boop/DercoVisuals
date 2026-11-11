@@ -204,7 +204,15 @@ for p in sorted(java_root.rglob('*.java')):
         source = source.replace(old, new)
     # MatrixStack.Entry must stay qualified: the source also imports Map.Entry.
     source = re.sub(r'\bclass_4665\b', 'MatrixStack.Entry', source)
-    source = source.replace('import net.minecraft.client.util.math.MatrixStack.Entry;\n', '')
+    # The intermediary nested class replacement can leave a duplicated outer name.
+    source = source.replace(
+        'import net.minecraft.client.util.math.MatrixStack.MatrixStack.Entry;\n',
+        'import net.minecraft.client.util.math.MatrixStack;\n'
+    )
+    source = source.replace(
+        'import net.minecraft.client.util.math.MatrixStack.Entry;\n',
+        'import net.minecraft.client.util.math.MatrixStack;\n'
+    )
     if p.name == 'GameRendererMixin.java':
         source = source.replace('((GameRenderer)this)', '((GameRenderer)(Object)this)')
     if p.name == 'HandledScreenMixin.java':
@@ -256,9 +264,14 @@ patch_generated_java('net/dercovisuals/gui/modules/ModulesTab.java', (
     ('Comparator.comparing(moduleEntry2 -> moduleEntry2.a().toLowerCase())',
      'Comparator.comparing((ModulesTab.ModuleEntry moduleEntry2) -> moduleEntry2.a().toLowerCase())'),
 ))
-patch_generated_java('net/dercovisuals/modules/utilities/TriggerBot.java', (
-    ('ArrayList var5 = new ArrayList();',
-     'ArrayList<LivingEntity> var5 = new ArrayList<>();'),
+
+# Do not port automated attack logic. Remove the module and unregister it cleanly.
+trigger_bot = java_root / 'net/dercovisuals/modules/utilities/TriggerBot.java'
+trigger_bot.unlink(missing_ok=True)
+patch_generated_java('net/dercovisuals/module/ModuleRegistry.java', (
+    ('import net.dercovisuals.modules.utilities.TriggerBot;\n', ''),
+    ('   public static final TriggerBot TRIGGER_BOT = new TriggerBot();\n', ''),
+    ('         KILL_EFFECT,\n         TRIGGER_BOT\n', '         KILL_EFFECT\n'),
 ))
 
 # EntityFinder deliberately returns Entity; each predicate below already narrows to
