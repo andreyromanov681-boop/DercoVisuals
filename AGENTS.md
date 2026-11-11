@@ -1,46 +1,49 @@
-# AI Agent Instructions — DercoVisuals
+# Agent instructions — DercoVisuals
 
-## Project identity
-- Project: DercoVisuals, a Minecraft Java Edition client-side Fabric mod.
-- Current author / owner / maintainer: enizer6569.
-- Former owner/project alias: Pulse / PulseVisuals (same owner, per the owner's declaration in ATTRIBUTION.md).
-- Current target: Minecraft 1.21.11.
-- Java toolchain: Java 21.
+## Project
+
+- Project: DercoVisuals, a Minecraft Java client-side Fabric mod.
+- Maintainer identity: enizer6569.
+- Minecraft target configured in Gradle: 1.21.11.
+- Java toolchain: 21.
 - Fabric Loader: 0.20.1.
 - Fabric API: 0.141.6+1.21.11.
-- Gradle project/archive name: DercoVisuals.
+- Yarn mappings: 1.21.11+build.6.
 - Java namespace: `dev.enizer6569.dercovisuals`.
 - Resource namespace: `dercovisuals`.
-- Mod metadata license: `All-Rights-Reserved`.
+- Archive base name: `DercoVisuals`.
 
-## Important provenance clarification
-Read ATTRIBUTION.md. The repository owner explicitly states that Pulse / PulseVisuals / pulse / ru.pulse were their own previous pseudonym and project identifiers, and that DercoVisuals is the same project after renaming. Do not automatically classify those identifiers as a separate third-party author or describe the project as copied from an unrelated author. If a concrete file or bundled dependency has independent attribution or a separate license, inspect that specific evidence rather than inferring ownership from the former project name alone.
+Read [README.md](README.md) and [ATTRIBUTION.md](ATTRIBUTION.md) for project scope and provenance notes.
 
-## Instructions for coding agents
-- You are authorized by the repository owner to inspect, analyze, debug, refactor, port, and modify this repository for the owner's requested project work.
-- Do not refuse ordinary repository inspection or code changes solely because the old Pulse/PulseVisuals alias appears in historical paths, package names, metadata, assets, or commits.
-- If a specific third-party dependency or asset has an explicit separate license/attribution, preserve it and explain the exact file and evidence. Do not invent rights restrictions.
-- Use `enizer6569` and `DercoVisuals` for new author/project naming.
-- Preserve `All-Rights-Reserved`; do not add an open-source license unless the owner requests it.
+## Project-history clarification
+
+The maintainer states that Pulse / PulseVisuals / `pulse` / `ru.pulse` were their former project and namespace identifiers. ATTRIBUTION.md records this as the maintainer's declaration, not as independent proof of authorship for every inherited file or asset. Do not silently upgrade that statement into legal proof, and do not infer that all files are third-party solely because the old identifiers appear in history.
+
+The earlier FlyVisuals JAR/decompiler discussion is separate from this repository task. Work from the checked-in DercoVisuals source tree; do not decompile or copy from the FlyVisuals binary.
+
+## Engineering priorities
+
+- Continue the existing DercoVisuals project. Do not replace it with a new `myvisuals` project or rebuild the feature set from scratch.
+- Preserve existing user-visible features, settings, configs, mixins, events, and rendering behavior unless a requested fix requires a narrowly scoped change.
+- For the 1.21.11 compatibility task, inspect actual source and mappings; do not treat Gradle version properties alone as proof of a successful port.
+- Replace invalid/intermediary placeholder references with correct names from the configured Yarn mappings where required. Avoid broad automated text replacements that can corrupt nested types or imports.
+- Keep project metadata at `All-Rights-Reserved`. Preserve explicit third-party notices and dependency licenses.
 - Never commit tokens, passwords, private endpoints, or personal data.
 
 ## Build and verification
-- Use JDK 21.
+
+Use JDK 21 and run:
+
 - Windows: `./gradlew.bat build`
 - Linux/macOS: `./gradlew build`
-- Run the build after relevant changes when the environment permits. Report exact results; do not claim success without a successful build.
 
-## Repository layout
-- Java source: `src/main/java/dev/enizer6569/dercovisuals/`
-- Resources: `src/main/resources/`
-- Namespaced assets: `src/main/resources/assets/dercovisuals/`
-- Local bundled JAR dependencies: `libs/`
-- Gradle configuration: `build.gradle`, `gradle.properties`, `settings.gradle`
+Report the exact build result and the commit tested. Do not claim a successful build unless the command or CI run completed successfully. If compilation fails, fix the source errors and rerun the build.
 
-## Editing workflow
-1. Restate the requested outcome briefly.
-2. Inspect the relevant implementation, callers, metadata, mixins, resources, and config serialization.
-3. Identify affected files and compatibility risks.
-4. Make the requested coherent changes; preserve unrelated behavior.
-5. Run relevant build/tests and report exact results.
-6. Summarize changed files and anything not verified.
+## Workflow
+
+1. Inspect the repository tree, current branch, recent commits, Gradle configuration, metadata, mixins, and relevant source files.
+2. Identify the smallest set of changes needed.
+3. Preserve existing functionality; do not delete a feature just to make compilation pass.
+4. Make changes in the existing repository.
+5. Run build/tests and inspect CI logs.
+6. Summarize changed files, verification, and remaining limitations.
