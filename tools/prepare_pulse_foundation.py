@@ -222,7 +222,7 @@ for p in sorted(java_root.rglob('*.java')):
         'import net.minecraft.client.util.math.MatrixStack.Entry;\n',
         'import net.minecraft.client.util.math.MatrixStack;\n'
     )
-    if p.name in ('MaceHelperHandConsumer.java', 'CustomHandShaderConsumer.java'):
+    if p.name == 'CustomHandShaderConsumer.java':
         source = source.replace('super.quad(', 'VertexConsumer.super.quad(')
     if p.parent.name == 'mixin':
         # Mixin source classes are transformed into their target classes at runtime.
@@ -292,6 +292,72 @@ patch_generated_java('net/dercovisuals/mixin/DebugHudMixin.java', (
     ('''((List)callbackInfoReturnable.getReturnValue()).stream().filter(o -> {
             String str = (String)o;''',
      '''callbackInfoReturnable.getReturnValue().stream().filter((String str) -> {'''),
+))
+
+# Exclude the weapon-specific Mace helper and all of its visual hooks.
+(java_root / 'net/dercovisuals/modules/utilities/MaceHelper.java').unlink(missing_ok=True)
+(java_root / 'net/dercovisuals/render/MaceHelperHandConsumer.java').unlink(missing_ok=True)
+patch_generated_java('net/dercovisuals/module/ModuleRegistry.java', (
+    ('import net.dercovisuals.modules.utilities.MaceHelper;\\n', ''),
+    ('   public static final MaceHelper MACE_HELPER = new MaceHelper();\\n', ''),
+    ('         MACE_HELPER,\\n', ''),
+))
+patch_generated_java('net/dercovisuals/render/HandRenderState.java', (
+    ('   public static boolean renderingMace = false;\\n', ''),
+))
+patch_generated_java('net/dercovisuals/mixin/HeldItemRendererMixin.java', (
+    ('import net.dercovisuals.modules.utilities.MaceHelper;\\n', ''),
+    ('      HandRenderState.renderingMace = MaceHelper.isMace(ItemStackVar);\\n', ''),
+    ('         HandRenderState.renderingMace = false;\\n', ''),
+))
+patch_generated_java('net/dercovisuals/mixin/ItemRendererMixin.java', (
+    ('import net.dercovisuals.modules.utilities.MaceHelper;\\n', ''),
+    ('import net.dercovisuals.render.MaceHelperHandConsumer;\\n', ''),
+    ('''      MaceHelper maceHelper = ModuleRegistry.MACE_HELPER;
+      if ((HandRenderState.renderingMace || HandRenderState.renderingHand)
+         && maceHelper != null
+         && maceHelper.k()
+         && maceHelper.handHighlight.get()
+         && MaceHelper.isHoldingMace()) {
+         return new MaceHelperHandConsumer(original, MaceHelper.getChargeColor());
+      }
+
+''', ''),
+    ('''         MaceHelper maceHelper = ModuleRegistry.MACE_HELPER;
+         if (maceHelper != null && maceHelper.k() && maceHelper.hotbarHighlight.get() && MaceHelper.isMace(ItemStackVar)) {
+            Color colorB = MaceHelper.getChargeColor();
+            RenderSystemHelper.disableDepthTest();
+            RenderSystemHelper.enableBlend();
+            RenderSystemHelper.defaultBlendFunc();
+            this.renderGuiQuad(
+               Tessellator.getInstance().begin(DrawMode.QUADS, VertexFormats.POSITION_COLOR),
+               i,
+               i2,
+               16,
+               16,
+               colorB.getRed(),
+               colorB.getGreen(),
+               colorB.getBlue(),
+               120
+            );
+            RenderSystemHelper.enableDepthTest();
+         }
+
+''', ''),
+))
+patch_generated_java('net/dercovisuals/mixin/DrawContextMixin.java', (
+    ('import net.dercovisuals.modules.utilities.MaceHelper;\\n', ''),
+    ('      MaceHelper maceHelper = ModuleRegistry.MACE_HELPER;\\n', ''),
+    ('''      if (maceHelper != null && maceHelper.k() && maceHelper.hotbarHighlight.get() && MaceHelper.isMace(ItemStackVar)) {
+         Color colorA = MaceHelper.getChargeColor();
+         int rgb = new Color(colorA.getRed(), colorA.getGreen(), colorA.getBlue(), 120).getRGB();
+         Matrix3x2fStack matrices = ((DrawContext)this).getMatrices();
+         matrices.pushMatrix();
+         matrices.translate(0.0F, 0.0F);
+         this.fill(i, i2, i + 16, i2 + 16, rgb);
+         matrices.popMatrix();
+      } else if (itemHighlighter != null''',
+     '''      if (itemHighlighter != null'''),
 ))
 
 # Do not port automated attack logic. Remove the module and unregister it cleanly.
