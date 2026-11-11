@@ -296,7 +296,7 @@ for relative_path in (
 # Player removal moved to PlayerRemoveS2CPacket in 1.21.11. Keep join/leave
 # notifications by handling the corresponding packet explicitly.
 player_list = java_root / 'net/dercovisuals/mixin/PlayerListMixin.java'
-player_list.write_text('''package net.dercovisuals.mixin;
+player_list_source = '''package net.dercovisuals.mixin;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -350,10 +350,12 @@ public class PlayerListMixin {
    private void onGameJoin(GameJoinS2CPacket packet, CallbackInfo ci) {
    }
 }
-''', encoding='utf-8').replace(
+'''
+player_list_source = player_list_source.replace(
     'net.dercovisuals.network.packet.s2c.play.PlayerRemoveS2CPacket',
     'net.minecraft.network.packet.s2c.play.PlayerRemoveS2CPacket'
 )
+player_list.write_text(player_list_source, encoding='utf-8')
 # Rebrand resource namespace and remove Pulse-only auth/brand assets where not referenced.
 for p in (SRC / 'resources').rglob('*'):
     if p.is_file() and p.suffix.lower() in ('.json', '.fsh', '.vsh', '.frag', '.glsl', '.txt'):
