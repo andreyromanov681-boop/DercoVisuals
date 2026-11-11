@@ -298,21 +298,21 @@ patch_generated_java('net/dercovisuals/mixin/DebugHudMixin.java', (
 (java_root / 'net/dercovisuals/modules/utilities/MaceHelper.java').unlink(missing_ok=True)
 (java_root / 'net/dercovisuals/render/MaceHelperHandConsumer.java').unlink(missing_ok=True)
 patch_generated_java('net/dercovisuals/module/ModuleRegistry.java', (
-    ('import net.dercovisuals.modules.utilities.MaceHelper;\\n', ''),
-    ('   public static final MaceHelper MACE_HELPER = new MaceHelper();\\n', ''),
-    ('         MACE_HELPER,\\n', ''),
+    ('import net.dercovisuals.modules.utilities.MaceHelper;\n', ''),
+    ('   public static final MaceHelper MACE_HELPER = new MaceHelper();\n', ''),
+    ('         MACE_HELPER,\n', ''),
 ))
 patch_generated_java('net/dercovisuals/render/HandRenderState.java', (
-    ('   public static boolean renderingMace = false;\\n', ''),
+    ('   public static boolean renderingMace = false;\n', ''),
 ))
 patch_generated_java('net/dercovisuals/mixin/HeldItemRendererMixin.java', (
-    ('import net.dercovisuals.modules.utilities.MaceHelper;\\n', ''),
-    ('      HandRenderState.renderingMace = MaceHelper.isMace(ItemStackVar);\\n', ''),
-    ('         HandRenderState.renderingMace = false;\\n', ''),
+    ('import net.dercovisuals.modules.utilities.MaceHelper;\n', ''),
+    ('      HandRenderState.renderingMace = MaceHelper.isMace(ItemStackVar);\n', ''),
+    ('         HandRenderState.renderingMace = false;\n', ''),
 ))
 patch_generated_java('net/dercovisuals/mixin/ItemRendererMixin.java', (
-    ('import net.dercovisuals.modules.utilities.MaceHelper;\\n', ''),
-    ('import net.dercovisuals.render.MaceHelperHandConsumer;\\n', ''),
+    ('import net.dercovisuals.modules.utilities.MaceHelper;\n', ''),
+    ('import net.dercovisuals.render.MaceHelperHandConsumer;\n', ''),
     ('''      MaceHelper maceHelper = ModuleRegistry.MACE_HELPER;
       if ((HandRenderState.renderingMace || HandRenderState.renderingHand)
          && maceHelper != null
@@ -346,8 +346,8 @@ patch_generated_java('net/dercovisuals/mixin/ItemRendererMixin.java', (
 ''', ''),
 ))
 patch_generated_java('net/dercovisuals/mixin/DrawContextMixin.java', (
-    ('import net.dercovisuals.modules.utilities.MaceHelper;\\n', ''),
-    ('      MaceHelper maceHelper = ModuleRegistry.MACE_HELPER;\\n', ''),
+    ('import net.dercovisuals.modules.utilities.MaceHelper;\n', ''),
+    ('      MaceHelper maceHelper = ModuleRegistry.MACE_HELPER;\n', ''),
     ('''      if (maceHelper != null && maceHelper.k() && maceHelper.hotbarHighlight.get() && MaceHelper.isMace(ItemStackVar)) {
          Color colorA = MaceHelper.getChargeColor();
          int rgb = new Color(colorA.getRed(), colorA.getGreen(), colorA.getBlue(), 120).getRGB();
