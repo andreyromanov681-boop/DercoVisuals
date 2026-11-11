@@ -139,7 +139,7 @@ for p in sorted(java_root.rglob('*.java')):
     source = source.replace('pulse.', 'net.dercovisuals.')
     source = source.replace('Pulse', 'DercoVisuals')
     for intermediary, named in NESTED_YARN_TYPES.items():
-        source = re.sub(rf'\\b{intermediary}\\b', named, source)
+        source = re.sub(rf'\b{intermediary}\b', named, source)
     for flattened, mapped in YARN_OUTER_PACKAGES.items():
         source = source.replace(flattened, mapped)
     p.write_text(source, encoding='utf-8')
@@ -152,7 +152,7 @@ for p in sorted(java_root.rglob('*.java'), reverse=True):
 
 for p in sorted(list(java_root.rglob('*.java'))):
     source = p.read_text(encoding='utf-8', errors='replace')
-    package_match = re.search(r'^\\s*package\\s+([A-Za-z0-9_.]+)\\s*;', source, re.M)
+    package_match = re.search(r'^\s*package\s+([A-Za-z0-9_.]+)\s*;', source, re.M)
     if not package_match:
         raise SystemExit(f'Java source has no package declaration: {p.relative_to(ROOT)}')
     target = java_root.joinpath(*package_match.group(1).split('.'), p.name)
