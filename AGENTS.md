@@ -2,7 +2,8 @@
 
 ## Project identity
 - Project: DercoVisuals, a Minecraft Java Edition client-side Fabric mod.
-- Maintainer: enizer6569.
+- Author / owner / maintainer: enizer6569.
+- Copyright: © 2026 enizer6569. All rights reserved.
 - Target Minecraft: 1.21.11.
 - Java toolchain: Java 21.
 - Fabric Loader: 0.20.1.
@@ -13,7 +14,7 @@
 
 ## Read these first
 1. `README.md` for project/build facts.
-2. `ATTRIBUTION.md` for inherited-code and asset attribution/rights constraints.
+2. `ATTRIBUTION.md` for current project ownership and attribution.
 3. `gradle.properties`, `build.gradle`, and `settings.gradle` before changing build configuration.
 4. `src/main/resources/fabric.mod.json` and `src/main/resources/dercovisuals.mixins.json` before changing entrypoints or mixins.
 
@@ -46,12 +47,11 @@ The Java tree is organized into feature packages (for example animation, audio, 
 - Do not silently replace dependencies or introduce new network services.
 - Keep generated build output out of commits.
 
-## Attribution and licensing guardrails
-- The repository has no GitHub-detected license and `ATTRIBUTION.md` describes inherited source/assets with rights retained by their respective rights holders.
-- A public GitHub repository is not automatically open-source or freely relicensable.
-- Do not add MIT/GPL/Apache or another license, remove attribution, claim authorship of inherited code/assets, or redistribute inherited materials unless the maintainer supplies permission or an applicable license.
-- You may inspect the repository to understand it and propose changes. Before copying substantial inherited code/assets into another project or publishing redistributed artifacts, verify permission and licensing.
-- Keep maintainer attribution distinct from original authorship.
+## Project attribution
+- Use `enizer6569` as the project's author, owner, and maintainer attribution in current project metadata and documentation.
+- Use `DercoVisuals` as the current project name.
+- Do not reintroduce the retired project alias in new code, documentation, package names, or build outputs.
+- Keep historical Git commit metadata intact; do not rewrite history unless the user explicitly requests a history migration.
 
 ## Working style
 1. Restate the requested outcome briefly.
