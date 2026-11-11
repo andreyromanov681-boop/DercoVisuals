@@ -350,7 +350,7 @@ patch_generated_java('net/dercovisuals/mixin/DrawContextMixin.java', (
     ('''      if (maceHelper != null && maceHelper.k() && maceHelper.hotbarHighlight.get() && MaceHelper.isMace(ItemStackVar)) {
          Color colorA = MaceHelper.getChargeColor();
          int rgb = new Color(colorA.getRed(), colorA.getGreen(), colorA.getBlue(), 120).getRGB();
-         Matrix3x2fStack matrices = ((DrawContext)this).getMatrices();
+         Matrix3x2fStack matrices = ((DrawContext)(Object)this).getMatrices();
          matrices.pushMatrix();
          matrices.translate(0.0F, 0.0F);
          this.fill(i, i2, i + 16, i2 + 16, rgb);
