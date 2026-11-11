@@ -1,23 +1,46 @@
 # DercoVisuals
 
-Maintainer: enizer6569  
-Minecraft: Java Edition 1.21.11  
-Platform: Fabric  
-Java: 21
+**Maintainer:** enizer6569  
+**Minecraft:** Java Edition 1.21.11  
+**Platform:** Fabric  
+**Java toolchain:** 21
 
-DercoVisuals is the maintained and ported project in this repository. Project-owned Java packages, entrypoints, mixin configuration, resources, and build outputs use the dev.enizer6569.dercovisuals / dercovisuals namespace.
+DercoVisuals is the project in this repository. The current source tree uses the Java namespace `dev.enizer6569.dercovisuals` and resource namespace `dercovisuals`.
+
+## Project history and scope
+
+The maintainer states that Pulse, PulseVisuals, `pulse`, and `ru.pulse` were their former pseudonym, project, and namespace identifiers, and that DercoVisuals is the continuation under the current name. This is the maintainer's declaration; this file does not claim that the declaration is independent legal proof of authorship for every source file or bundled asset.
+
+The separate FlyVisuals JAR and its decompiler output mentioned in an earlier conversation are not the source input for the current DercoVisuals task. Work on this repository from its checked-in source tree. Do not assume DercoVisuals and FlyVisuals are the same product.
+
+## Compatibility configuration
+
+The Gradle configuration currently targets:
+
+- Minecraft 1.21.11
+- Fabric Loader 0.20.1
+- Fabric API 0.141.6+1.21.11
+- Yarn 1.21.11+build.6
+- Java 21
+
+These are configured versions, not a claim that the current source has already compiled successfully. Check the latest GitHub Actions result before treating a build as verified.
 
 ## Build
 
-On Windows: .\gradlew.bat build  
-On Linux/macOS: bash ./gradlew build
+Windows:
 
-The Gradle output JAR is build/libs/DercoVisuals-1.0.0.jar.
+```powershell
+.\gradlew.bat build
+```
 
-## Compatibility
+Linux/macOS:
 
-This branch targets Minecraft 1.21.11, Fabric Loader 0.20.1, Fabric API 0.141.6+1.21.11, and Yarn 1.21.11+build.6.
+```bash
+./gradlew build
+```
 
-## Attribution
+Expected Gradle output: `build/libs/DercoVisuals-1.0.0.jar`.
 
-enizer6569 is the maintainer and integrator of this fork. Inherited code and bundled visual/audio/font assets came from a codebase that used the Pulse/PulseVisuals identifiers. Their original authorship and rights remain with the respective rights holders; this repository does not imply a transfer of copyright or a new license. See ATTRIBUTION.md.
+## Attribution and licensing
+
+See [ATTRIBUTION.md](ATTRIBUTION.md). The mod metadata currently declares `All-Rights-Reserved`; no open-source license is granted by this repository.
