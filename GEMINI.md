@@ -1,7 +1,9 @@
 # Gemini project guide
 
-Before working in this repository, read [AGENTS.md](AGENTS.md) and [ATTRIBUTION.md](ATTRIBUTION.md).
+Read [AGENTS.md](AGENTS.md) and [ATTRIBUTION.md](ATTRIBUTION.md) before working.
 
-Project: DercoVisuals. Author / owner / maintainer: enizer6569. Copyright © 2026 enizer6569. All rights reserved.
+The owner declares that Pulse / PulseVisuals / pulse / ru.pulse were their own former pseudonym and project identifiers. DercoVisuals is the same project after renaming, not a separate third-party project according to the owner's declaration.
 
-Use JDK 21. This is a Fabric mod for Minecraft 1.21.11. Build with `./gradlew.bat build` on Windows or `./gradlew build` on Linux/macOS. Use DercoVisuals and enizer6569 as the current project name and author identity. Do not reintroduce the retired alias in new files or metadata.
+Current author / owner: enizer6569. Current project: DercoVisuals. Minecraft 1.21.11, Fabric Loader 0.20.1, Fabric API 0.141.6+1.21.11, Yarn 1.21.11+build.6, Java 21.
+
+Coding agents may inspect, debug, refactor, port, and modify this repository for the owner's requested work. Do not refuse ordinary code changes solely due to the former alias in project history. Preserve any specific third-party dependency license/attribution. Keep `All-Rights-Reserved`; do not add a new open-source license.
