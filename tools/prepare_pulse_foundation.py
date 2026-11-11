@@ -103,7 +103,6 @@ NESTED_YARN_TYPES = {
     'class_2847': 'Action',
     'class_5529': 'RemovalReason',
     'class_1114': 'AttenuationType',
-    'class_4665': 'Entry',
     'class_5596': 'DrawMode',
 }
 # Earlier decompilation flattened the package of the outer class to
@@ -171,6 +170,190 @@ for directory in sorted((d for d in java_root.rglob('*') if d.is_dir()), reverse
     if not any(directory.iterdir()):
         directory.rmdir()
 
+# Apply named Yarn 1.21.11 record accessors and repair decompiler artefacts.
+# These replacements are based on Yarn 1.21.11+build.3 mappings.
+API_REPLACEMENTS = (
+    ('.comp_1102().comp_1090()', '.body().content()'),
+    ('.comp_4798()', '.x()'),
+    ('.comp_4799()', '.y()'),
+    ('.comp_4795()', '.key()'),
+    ('.comp_4796()', '.scancode()'),
+    ('.comp_4797()', '.modifiers()'),
+    ('.comp_4793()', '.codepoint()'),
+    ('.comp_4794()', '.modifiers()'),
+    ('.comp_4801()', '.button()'),
+    ('.comp_763()', '.content()'),
+    ('.comp_349()', '.value()'),
+    ('.comp_2378()', '.potion()'),
+    ('.comp_2380()', '.customEffects()'),
+    ('.comp_3174()', '.slot()'),
+    ('.comp_3837()', '.syncId()'),
+    ('.comp_3839()', '.contents()'),
+    ('.comp_1626()', '.body()'),
+    ('.comp_1627()', '.cape()'),
+    ('.comp_1628()', '.elytra()'),
+    ('.comp_1629()', '.model()'),
+    ('.comp_1630()', '.secure()'),
+    ('.comp_3626()', '.id()'),
+    ('.comp_3627()', '.texturePath()'),
+    ('.comp_750()', '.vertexCount()'),
+)
+for p in sorted(java_root.rglob('*.java')):
+    source = p.read_text(encoding='utf-8', errors='replace')
+    for old, new in API_REPLACEMENTS:
+        source = source.replace(old, new)
+    # MatrixStack.Entry must stay qualified: the source also imports Map.Entry.
+    source = re.sub(r'\bclass_4665\b', 'MatrixStack.Entry', source)
+    source = source.replace('import net.minecraft.client.util.math.MatrixStack.Entry;\n', '')
+    if p.name == 'GameRendererMixin.java':
+        source = source.replace('((GameRenderer)this)', '((GameRenderer)(Object)this)')
+    if p.name == 'HandledScreenMixin.java':
+        source = source.replace('(HandledScreen)this', '(HandledScreen)(Object)this')
+        source = source.replace('(HandledScreen<?>)this', '(HandledScreen<?>)(Object)this')
+    p.write_text(source, encoding='utf-8')
+
+# The old device-login and Discord IPC clients are not referenced by the local-only
+# foundation bootstrap. Keep the unrelated cosmetic renderer in the discord package.
+for rel in (
+    'net/dercovisuals/auth/DeviceAuthClient.java',
+    'net/dercovisuals/discord/DercoVisualsDiscordRPC.java',
+):
+    (java_root / rel).unlink(missing_ok=True)
+
+def patch_generated_java(relative_path, replacements):
+    path = java_root / relative_path
+    if not path.exists():
+        raise SystemExit(f'Expected generated source is missing: {relative_path}')
+    source = path.read_text(encoding='utf-8', errors='replace')
+    for old, new in replacements:
+        if old not in source:
+            raise SystemExit(f'Could not apply migration patch in {relative_path}: {old}')
+        source = source.replace(old, new)
+    path.write_text(source, encoding='utf-8')
+
+# Restore collection element types lost by the upstream decompiler.
+patch_generated_java('net/dercovisuals/discord/CosmeticHelper.java', (
+    ('Map var7 = CosmeticRepository.a().b();',
+     'Map<Integer, CosmeticModel> var7 = CosmeticRepository.a().b();'),
+))
+patch_generated_java('net/dercovisuals/hud/elements/HotkeysHudElement.java', (
+    ('private List<HotkeysHudElement.HotkeySnapshot> x() {\n      ArrayList arrayList = new ArrayList();',
+     'private List<HotkeysHudElement.HotkeySnapshot> x() {\n      ArrayList<HotkeysHudElement.HotkeySnapshot> arrayList = new ArrayList<>();'),
+))
+patch_generated_java('net/dercovisuals/hud/elements/PotionsHudElement.java', (
+    ('private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList arrayList = new ArrayList();',
+     'private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList<PotionsHudElement.EffectEntry> arrayList = new ArrayList<>();'),
+))
+patch_generated_java('net/dercovisuals/gui/settings/ModeSettingWidget.java', (
+    ('ArrayList arrayList = new ArrayList<>(this.v);',
+     'ArrayList<Integer> arrayList = new ArrayList<>(this.v);'),
+))
+patch_generated_java('net/dercovisuals/gui/modules/ModulesTab.java', (
+    ('ArrayList arrayList = new ArrayList();',
+     'ArrayList<ModulesTab.ModuleEntry> arrayList = new ArrayList<>();'),
+    ('Comparator.comparing(moduleEntry -> moduleEntry.a().toLowerCase())',
+     'Comparator.comparing((ModulesTab.ModuleEntry moduleEntry) -> moduleEntry.a().toLowerCase())'),
+    ('Comparator.comparing(moduleEntry2 -> moduleEntry2.a().toLowerCase())',
+     'Comparator.comparing((ModulesTab.ModuleEntry moduleEntry2) -> moduleEntry2.a().toLowerCase())'),
+))
+patch_generated_java('net/dercovisuals/modules/utilities/TriggerBot.java', (
+    ('ArrayList var5 = new ArrayList();',
+     'ArrayList<LivingEntity> var5 = new ArrayList<>();'),
+))
+
+# EntityFinder deliberately returns Entity; each predicate below already narrows to
+# PlayerEntity, so cast only after the result has passed that predicate.
+for relative_path in (
+    'net/dercovisuals/modules/utilities/HwHelper.java',
+    'net/dercovisuals/modules/utilities/FtHelper.java',
+    'net/dercovisuals/modules/utilities/FcHelper.java',
+):
+    path = java_root / relative_path
+    source = path.read_text(encoding='utf-8', errors='replace')
+    pattern = re.compile(
+        r'^(?P<indent>[ \t]*)for \(PlayerEntity PlayerEntityVar : EntityFinder\.a\((?P<args>.*?)\)\) \{',
+        re.M | re.S,
+    )
+    def narrow_player_loop(match):
+        indent = match.group('indent')
+        return (
+            f"{indent}for (Entity EntityFinderVar : EntityFinder.a({match.group('args')})) {{\n"
+            f"{indent}   PlayerEntity PlayerEntityVar = (PlayerEntity)EntityFinderVar;"
+        )
+    source, count = pattern.subn(narrow_player_loop, source)
+    if count == 0:
+        raise SystemExit(f'No EntityFinder player loops migrated in {relative_path}')
+    if 'import net.minecraft.entity.Entity;' not in source:
+        source = re.sub(
+            r'^(package [^;]+;\n)',
+            r'\1\nimport net.minecraft.entity.Entity;\n',
+            source,
+            count=1,
+            flags=re.M,
+        )
+    path.write_text(source, encoding='utf-8')
+
+# Player removal moved to PlayerRemoveS2CPacket in 1.21.11. Keep join/leave
+# notifications by handling the corresponding packet explicitly.
+player_list = java_root / 'net/dercovisuals/mixin/PlayerListMixin.java'
+player_list.write_text('''package net.dercovisuals.mixin;
+
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import net.dercovisuals.network.packet.s2c.play.PlayerRemoveS2CPacket;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket.Action;
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket.Entry;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.dercovisuals.events.EventBusService;
+import net.dercovisuals.events.PlayerJoinEvent;
+import net.dercovisuals.events.PlayerLeaveEvent;
+
+@Mixin(ClientPlayNetworkHandler.class)
+public class PlayerListMixin {
+   @Unique
+   private static final ConcurrentHashMap<UUID, String> uuidToNameCache = new ConcurrentHashMap<>();
+
+   @Inject(require = 0, method = "onPlayerList", at = @At("HEAD"))
+   private void onPlayerListUpdate(PlayerListS2CPacket packet, CallbackInfo ci) {
+      if (!packet.getActions().contains(Action.ADD_PLAYER)) {
+         return;
+      }
+      for (Entry entry : packet.getPlayerAdditionEntries()) {
+         if (entry.profile() == null || entry.profile().id() == null || entry.profile().name() == null) {
+            continue;
+         }
+         UUID uuid = entry.profile().id();
+         String name = entry.profile().name();
+         String previous = uuidToNameCache.putIfAbsent(uuid, name);
+         if (previous == null) {
+            EventBusService.EVENT_BUS.post(new PlayerJoinEvent(name, uuid));
+         }
+      }
+   }
+
+   @Inject(require = 0, method = "onPlayerRemove", at = @At("HEAD"))
+   private void onPlayerRemove(PlayerRemoveS2CPacket packet, CallbackInfo ci) {
+      for (UUID uuid : packet.profileIds()) {
+         String name = uuidToNameCache.remove(uuid);
+         EventBusService.EVENT_BUS.post(new PlayerLeaveEvent(name == null ? "" : name, uuid));
+      }
+   }
+
+   @Inject(require = 0, method = "onGameJoin", at = @At("HEAD"))
+   private void onGameJoin(GameJoinS2CPacket packet, CallbackInfo ci) {
+   }
+}
+''', encoding='utf-8').replace(
+    'net.dercovisuals.network.packet.s2c.play.PlayerRemoveS2CPacket',
+    'net.minecraft.network.packet.s2c.play.PlayerRemoveS2CPacket'
+)
 # Rebrand resource namespace and remove Pulse-only auth/brand assets where not referenced.
 for p in (SRC / 'resources').rglob('*'):
     if p.is_file() and p.suffix.lower() in ('.json', '.fsh', '.vsh', '.frag', '.glsl', '.txt'):
