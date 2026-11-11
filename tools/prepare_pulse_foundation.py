@@ -400,6 +400,16 @@ for relative_path in (
         )
     path.write_text(source, encoding='utf-8')
 
+# The local-only bootstrap has no updater; remove the stale upstream update hook.
+patch_generated_java('ai/derco/mixin/TitleScreenMixin.java', (
+    ('''   @Inject(require = 0, method = "init", at = @At("TAIL"))
+   private void onInit(CallbackInfo callbackInfo) {
+      DercoVisuals.checkAndShowUpdate((TitleScreen)(Object)this);
+   }
+
+''', ''),
+))
+
 # Player removal moved to PlayerRemoveS2CPacket in 1.21.11. Keep join/leave
 # notifications by handling the corresponding packet explicitly.
 player_list = java_root / 'ai/derco/mixin/PlayerListMixin.java'
@@ -497,4 +507,40 @@ if libs.exists():
     for jar in libs.glob('*.jar'):
         shutil.copy2(jar, target / jar.name)
 
-print(f'Prepared DercoVisuals Pulse foundation: {len(list((SRC / "java").rglob("*.java")))} Java files')
+# Remove the unused compatibility stub left by the upstream account integration.
+(java_root / 'aethereal' / 'Session.java').unlink(missing_ok=True)
+try:
+    (java_root / 'aethereal').rmdir()
+except OSError:
+    pass
+
+# Finish the rebrand inside generated Java: config paths, resource identifiers,
+# mixin-owned helper names, logger names, and remaining user-facing labels.
+for p in sorted(java_root.rglob('*.java')):
+    source = p.read_text(encoding='utf-8', errors='replace')
+    source = source.replace('pulse', 'derco')
+    source = source.replace('assets/derco/', 'assets/dercovisuals/')
+    source = source.replace('/assets/derco/', '/assets/dercovisuals/')
+    source = source.replace('derco:', 'dercovisuals:')
+    source = source.replace('Identifier.of("derco",', 'Identifier.of("dercovisuals",')
+    source = source.replace('() -> "derco"', '() -> "dercovisuals"')
+    source = source.replace('LogManager.getLogger("derco/config")', 'LogManager.getLogger("dercovisuals/config")')
+    source = source.replace('FOLDER_NAME = "derco"', 'FOLDER_NAME = "dercovisuals"')
+    source = source.replace('resolve("derco")', 'resolve("dercovisuals")')
+    source = source.replace('"derco-autosave"', '"dercovisuals-autosave"')
+    source = source.replace('"derco_config_v1"', '"dercovisuals_config_v1"')
+    source = source.replace('EVENT_BUS.registerLambdaFactory("derco"', 'EVENT_BUS.registerLambdaFactory("ai.derco"')
+    source = source.replace('".derco"', '".derco"')
+    source = source.replace('DercoVisualsVisuals', 'DercoVisuals')
+    source = source.replace('derco @Alex_sigma', 'DercoVisuals')
+    p.write_text(source, encoding='utf-8')
+
+# Rename any remaining resource filenames that still carry the upstream brand.
+for p in sorted((SRC / 'resources').rglob('*'), key=lambda item: len(item.parts), reverse=True):
+    if p.exists() and 'pulse' in p.name.lower():
+        target = p.with_name(re.sub('pulse', 'dercovisuals', p.name, flags=re.I))
+        if target.exists():
+            raise SystemExit(f'Resource rename would overwrite {target.relative_to(ROOT)}')
+        p.rename(target)
+
+print(f'Prepared DercoVisuals: {len(list((SRC / "java").rglob("*.java")))} Java files')
