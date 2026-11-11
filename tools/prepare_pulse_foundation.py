@@ -31,7 +31,7 @@ for rel in ('pulse/gui/events',):
 
 # Test harnesses and optional account/Discord integrations are not part of this free,
 # offline-first visual client foundation.
-for rel in ('pulse/TestMod.java',):
+for rel in ('pulse/TestMod.java', 'Test.java'):
     (JAVA / rel).unlink(missing_ok=True)
 
 # Remove the two mine-specific marker aliases, while retaining the generic marker feature.
