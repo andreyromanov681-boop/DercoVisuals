@@ -77,16 +77,94 @@ shutil.copytree(JAVA, SRC / 'java')
 shutil.copytree(RES, SRC / 'resources')
 
 # Rebrand Java packages, references, filenames and resource identifiers.
-for p in sorted((SRC / 'java').rglob('*.java')):
-    text = p.read_text(encoding='utf-8', errors='replace')
-    text = text.replace('ru.pulse', 'net.dercovisuals')
-    text = text.replace('pulse.', 'net.dercovisuals.')
-    text = text.replace('Pulse', 'DercoVisuals')
-    p.write_text(text, encoding='utf-8')
-for p in sorted((SRC / 'java').rglob('*.java'), reverse=True):
+# The archive mixes named Yarn outer classes with intermediary IDs for nested types.
+# These nested mappings are verified against FabricMC/yarn 1.21.11 (build 3).
+NESTED_YARN_TYPES = {
+    'class_240': 'Type',
+    'class_242': 'FluidHandling',
+    'class_3960': 'ShapeType',
+    'class_2705': 'Entry',
+    'class_5893': 'Action',
+    'class_1963': 'Precipitation',
+    'class_5271': 'Properties',
+    'class_5859': 'ChatRestriction',
+    'class_4598': 'Immediate',
+    'class_5245': 'Visitor',
+    'class_5246': 'StyledVisitor',
+    'class_2585': 'Literal',
+    'class_10445': 'Glint',
+    'class_10726': 'TextureAssetInfo',
+    'class_5618': 'Context',
+    'class_7590': 'Visible',
+    'class_7177': 'DoubleSliderCallbacks',
+    'class_1012': 'Format',
+    'class_11900': 'Category',
+    'class_307': 'Type',
+    'class_2847': 'Action',
+    'class_5529': 'RemovalReason',
+    'class_1114': 'AttenuationType',
+    'class_4665': 'Entry',
+    'class_5596': 'DrawMode',
+}
+# Earlier decompilation flattened the package of the outer class to
+# net.minecraft.<Class>. Restore the exact Yarn 1.21.11 package names.
+YARN_OUTER_PACKAGES = {
+    'net.minecraft.HitResult.': 'net.minecraft.util.hit.HitResult.',
+    'net.minecraft.RaycastContext.': 'net.minecraft.world.RaycastContext.',
+    'net.minecraft.PlayerListS2CPacket.': 'net.minecraft.network.packet.s2c.play.PlayerListS2CPacket.',
+    'net.minecraft.Biome.': 'net.minecraft.world.biome.Biome.',
+    'net.minecraft.ClientWorld.': 'net.minecraft.client.world.ClientWorld.',
+    'net.minecraft.MinecraftClient.': 'net.minecraft.client.MinecraftClient.',
+    'net.minecraft.VertexConsumerProvider.': 'net.minecraft.client.render.VertexConsumerProvider.',
+    'net.minecraft.StringVisitable.': 'net.minecraft.text.StringVisitable.',
+    'net.minecraft.PlainTextContent.': 'net.minecraft.text.PlainTextContent.',
+    'net.minecraft.ItemRenderState.': 'net.minecraft.client.render.item.ItemRenderState.',
+    'net.minecraft.AssetInfo.': 'net.minecraft.util.AssetInfo.',
+    'net.minecraft.EntityRendererFactory.': 'net.minecraft.client.render.entity.EntityRendererFactory.',
+    'net.minecraft.ChatHudLine.': 'net.minecraft.client.gui.hud.ChatHudLine.',
+    'net.minecraft.SimpleOption.': 'net.minecraft.client.option.SimpleOption.',
+    'net.minecraft.NativeImage.': 'net.minecraft.client.texture.NativeImage.',
+    'net.minecraft.KeyBinding.': 'net.minecraft.client.option.KeyBinding.',
+    'net.minecraft.InputUtil.': 'net.minecraft.client.util.InputUtil.',
+    'net.minecraft.PlayerActionC2SPacket.': 'net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket.',
+    'net.minecraft.Entity.': 'net.minecraft.entity.Entity.',
+    'net.minecraft.SoundInstance.': 'net.minecraft.client.sound.SoundInstance.',
+    'net.minecraft.MatrixStack.': 'net.minecraft.client.util.math.MatrixStack.',
+}
+
+java_root = SRC / 'java'
+for p in sorted(java_root.rglob('*.java')):
+    source = p.read_text(encoding='utf-8', errors='replace')
+    source = source.replace('ru.pulse', 'net.dercovisuals')
+    source = source.replace('pulse.', 'net.dercovisuals.')
+    source = source.replace('Pulse', 'DercoVisuals')
+    for intermediary, named in NESTED_YARN_TYPES.items():
+        source = re.sub(rf'\\b{intermediary}\\b', named, source)
+    for flattened, mapped in YARN_OUTER_PACKAGES.items():
+        source = source.replace(flattened, mapped)
+    p.write_text(source, encoding='utf-8')
+
+# Rebrand class filenames, then make the filesystem package layout match each
+# declaration. This removes stale pulse/ and ru/pulse/ source paths.
+for p in sorted(java_root.rglob('*.java'), reverse=True):
     if 'Pulse' in p.name:
-        target = p.with_name(p.name.replace('Pulse', 'DercoVisuals'))
-        p.rename(target)
+        p.rename(p.with_name(p.name.replace('Pulse', 'DercoVisuals')))
+
+for p in sorted(list(java_root.rglob('*.java'))):
+    source = p.read_text(encoding='utf-8', errors='replace')
+    package_match = re.search(r'^\\s*package\\s+([A-Za-z0-9_.]+)\\s*;', source, re.M)
+    if not package_match:
+        raise SystemExit(f'Java source has no package declaration: {p.relative_to(ROOT)}')
+    target = java_root.joinpath(*package_match.group(1).split('.'), p.name)
+    if target != p:
+        if target.exists():
+            raise SystemExit(f'Package relocation would overwrite {target.relative_to(ROOT)}')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        p.replace(target)
+
+for directory in sorted((d for d in java_root.rglob('*') if d.is_dir()), reverse=True):
+    if not any(directory.iterdir()):
+        directory.rmdir()
 
 # Rebrand resource namespace and remove Pulse-only auth/brand assets where not referenced.
 for p in (SRC / 'resources').rglob('*'):
