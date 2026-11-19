@@ -98,3 +98,15 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Assistant/tool: ChatGPT automation run.
 - Replaced the regex-based field-line matcher with exact line-content matching in `tools/prepare_pulse_foundation.py`. This avoids escaping ambiguity while still requiring exactly one known decompiler field, preserving the actual Java `assert` statement, and rejecting any leftover `$assertionsDisabled` reference.
 - This is a follow-up implementation correction; final verification remains the CI run for the current `pulse-foundation` head.
+
+
+---
+
+## 2026-11-19 — FontManager fix verified
+
+- Final source-generation fix is on `pulse-foundation` at commit `c3d44fffd74c6ee43b1e99ce9a9a5a501ab40843`.
+- GitHub Actions [run #39](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44494791779) completed successfully. `Generate DercoVisuals sources`, `compileJava`, `jar`, `remapJar`, `assemble`, and `build` all succeeded; build time reported 1m 16s.
+- `test` and `compileTestJava` reported `NO-SOURCE`; there are no automated Java tests in this build yet.
+- Inspected the generated `FontManager.java` artifact: the manual decompiler field is absent while `assert resourceAsStream != null;` remains. Inspected the built JAR with `javap`: the remaining `$assertionsDisabled` field is javac's expected synthetic field.
+- The CI uploaded `DercoVisuals-1.0.0.jar` and its sources. No changes were made to `main` or any other branch.
+- Remaining follow-up: investigate Loom's non-fatal "Cannot remap" warnings for several mixin targets/methods and perform in-game font/render smoke tests. Also add automated tests where practical.
