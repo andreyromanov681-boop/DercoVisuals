@@ -76,3 +76,16 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Verification at edit time: patch insertion and regex escaping were checked against the current generator source. Full Gradle build is pending the branch CI run; no local Gradle build was available through this GitHub-only environment.
 - Unresolved: confirm the new CI build passes and inspect any subsequent compiler errors; in-game font rendering has not been tested.
 - Next action: inspect the workflow run triggered by this commit and continue only with the first confirmed failure.
+
+
+---
+
+## 2026-11-19 — Refine FontManager assertion-field fix
+
+- Assistant/tool: ChatGPT automation run.
+- Inspected the generated-source artifact from CI run [#37](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44494501573), specifically `ai/derco/render/font/FontManager.java`. The class contains the real Java statement `assert resourceAsStream != null;`; the decompiler-emitted `$assertionsDisabled` field has no references in the class.
+- Refined `tools/prepare_pulse_foundation.py`: instead of renaming the redundant field, remove exactly one matching decompiler-generated declaration, preserve the Java `assert` statement so javac generates its own synthetic field, and fail fast if the expected statement/declaration shape differs or any reference remains.
+- No runtime behavior is intentionally changed; assertion enablement remains controlled by Java's normal `desiredAssertionStatus()` handling.
+- Verification: generated artifact from run #37 confirms the field is unused and the assertion statement exists. Final Gradle/CI verification is pending the follow-up push; no local Gradle build was available.
+- Unresolved: check the follow-up CI result and manually smoke-test font loading/rendering in Minecraft.
+- Next action: inspect the follow-up workflow run for compilation and build results.

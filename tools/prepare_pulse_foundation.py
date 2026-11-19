@@ -251,20 +251,23 @@ def patch_generated_java(relative_path, replacements):
         source = source.replace(old, new)
     path.write_text(source, encoding='utf-8')
 
-# javac reserves the synthetic field name $assertionsDisabled for Java assertions.
-# The upstream decompiler emitted that exact field into FontManager, which then
-# collides with javac's generated symbol. Rename the decompiler field and its
-# in-class references only; preserve the original assertion-status initializer.
+# javac synthesizes $assertionsDisabled when compiling Java assert statements.
+# The decompiler also emitted a redundant copy of that field into FontManager.
+# Keep the real assert statement and remove only the unused decompiler artifact.
 font_manager_path = java_root / 'ai/derco/render/font/FontManager.java'
 if not font_manager_path.exists():
     raise SystemExit('Expected generated source is missing: ai/derco/render/font/FontManager.java')
 font_manager_source = font_manager_path.read_text(encoding='utf-8', errors='replace')
-assertion_field = 'static final boolean $assertionsDisabled = !FontManager.class.desiredAssertionStatus();'
-if font_manager_source.count(assertion_field) != 1:
-    raise SystemExit('FontManager assertion-field migration precondition failed; expected exactly one decompiler-generated field')
-font_manager_source, assertion_reference_count = re.subn(r'\$assertionsDisabled\b', '$dercoAssertionsDisabled', font_manager_source)
-if assertion_reference_count < 1:
-    raise SystemExit('FontManager assertion-field migration did not replace the expected identifier')
+if 'assert resourceAsStream != null;' not in font_manager_source:
+    raise SystemExit('FontManager assertion migration precondition failed; expected Java assert statement is missing')
+assertion_field_pattern = re.compile(
+    r'(?m)^[ \t]*static final boolean \\$assertionsDisabled = !FontManager\\.class\\.desiredAssertionStatus\\(\\);[ \t]*\\r?\\n'
+)
+font_manager_source, removed_assertion_fields = assertion_field_pattern.subn('', font_manager_source)
+if removed_assertion_fields != 1:
+    raise SystemExit('FontManager assertion migration precondition failed; expected exactly one decompiler-generated field')
+if re.search(r'\\$assertionsDisabled\\b', font_manager_source):
+    raise SystemExit('FontManager assertion migration left a reference to the removed decompiler field')
 font_manager_path.write_text(font_manager_source, encoding='utf-8')
 
 # Restore collection element types lost by the upstream decompiler.
