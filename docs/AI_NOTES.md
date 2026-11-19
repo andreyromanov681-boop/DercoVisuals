@@ -89,3 +89,12 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Verification: generated artifact from run #37 confirms the field is unused and the assertion statement exists. Final Gradle/CI verification is pending the follow-up push; no local Gradle build was available.
 - Unresolved: check the follow-up CI result and manually smoke-test font loading/rendering in Minecraft.
 - Next action: inspect the follow-up workflow run for compilation and build results.
+
+
+---
+
+## 2026-11-19 — Tighten FontManager source guard
+
+- Assistant/tool: ChatGPT automation run.
+- Replaced the regex-based field-line matcher with exact line-content matching in `tools/prepare_pulse_foundation.py`. This avoids escaping ambiguity while still requiring exactly one known decompiler field, preserving the actual Java `assert` statement, and rejecting any leftover `$assertionsDisabled` reference.
+- This is a follow-up implementation correction; final verification remains the CI run for the current `pulse-foundation` head.

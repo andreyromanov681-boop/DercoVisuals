@@ -260,13 +260,13 @@ if not font_manager_path.exists():
 font_manager_source = font_manager_path.read_text(encoding='utf-8', errors='replace')
 if 'assert resourceAsStream != null;' not in font_manager_source:
     raise SystemExit('FontManager assertion migration precondition failed; expected Java assert statement is missing')
-assertion_field_pattern = re.compile(
-    r'(?m)^[ \t]*static final boolean \\$assertionsDisabled = !FontManager\\.class\\.desiredAssertionStatus\\(\\);[ \t]*\\r?\\n'
-)
-font_manager_source, removed_assertion_fields = assertion_field_pattern.subn('', font_manager_source)
-if removed_assertion_fields != 1:
+assertion_field = 'static final boolean $assertionsDisabled = !FontManager.class.desiredAssertionStatus();'
+font_manager_lines = font_manager_source.splitlines(keepends=True)
+matching_assertion_fields = [line for line in font_manager_lines if line.strip() == assertion_field]
+if len(matching_assertion_fields) != 1:
     raise SystemExit('FontManager assertion migration precondition failed; expected exactly one decompiler-generated field')
-if re.search(r'\\$assertionsDisabled\\b', font_manager_source):
+font_manager_source = ''.join(line for line in font_manager_lines if line.strip() != assertion_field)
+if '$assertionsDisabled' in font_manager_source:
     raise SystemExit('FontManager assertion migration left a reference to the removed decompiler field')
 font_manager_path.write_text(font_manager_source, encoding='utf-8')
 
