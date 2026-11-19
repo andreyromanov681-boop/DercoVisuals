@@ -63,3 +63,16 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Initial CI run was superseded while the migration script was corrected. The latest workflow run must be checked for extraction and compilation errors.
 - Important: this is a migration bootstrap, not a finished port. The upstream project configuration targets Minecraft 1.21.4 while its metadata claims 1.21.11, so API/mixin incompatibilities are expected and must be fixed iteratively. Do not publish this branch as the `latest` player release until CI passes and in-game smoke tests succeed.
 - Next: inspect the current CI logs; fix the first compile/mixin errors; replace Pulse visual branding in the GUI; verify every module category; audit all remaining event/marker code for mine-specific behavior; keep `main` stable until the new branch is ready.
+
+
+---
+
+## 2026-11-19 — FontManager javac synthetic-field collision
+
+- Assistant/tool: ChatGPT automation run.
+- Verified the current `pulse-foundation` head at `f2b804e30d6c83f46071ae36ee1048bb93bff162`; no other branch was modified.
+- Confirmed from GitHub Actions run [#36](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/43103299692) that source generation succeeds and `:compileJava` fails because generated `ai/derco/render/font/FontManager.java` declares `$assertionsDisabled`, which conflicts with javac's compiler-synthesized assertion field.
+- Updated `tools/prepare_pulse_foundation.py` to require exactly one expected decompiler-generated field declaration, then rename that field and its references within `FontManager.java` to `$dercoAssertionsDisabled`. The original `desiredAssertionStatus()` initializer is preserved. The migration fails fast if the source shape differs.
+- Verification at edit time: patch insertion and regex escaping were checked against the current generator source. Full Gradle build is pending the branch CI run; no local Gradle build was available through this GitHub-only environment.
+- Unresolved: confirm the new CI build passes and inspect any subsequent compiler errors; in-game font rendering has not been tested.
+- Next action: inspect the workflow run triggered by this commit and continue only with the first confirmed failure.
