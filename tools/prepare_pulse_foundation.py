@@ -578,21 +578,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ai.derco.module.ModuleRegistry;
-import net.minecraft.class_1309;
-import net.minecraft.class_2874;
-import net.minecraft.class_765;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.client.render.LightmapTextureManager;
 
-@Mixin(class_765.class)
+@Mixin(LightmapTextureManager.class)
 public class LightmapTextureManagerMixin {
    @Inject(method = "getDarkness(Lnet/minecraft/entity/LivingEntity;FF)F", at = @At("HEAD"), cancellable = true)
-   private void derco$disableDarkness(class_1309 entity, float factor, float tickProgress, CallbackInfoReturnable<Float> cir) {
+   private void derco$disableDarkness(LivingEntity entity, float factor, float tickProgress, CallbackInfoReturnable<Float> cir) {
       if (ModuleRegistry.FULL_BRIGHT != null && ModuleRegistry.FULL_BRIGHT.k()) {
          cir.setReturnValue(0.0F);
       }
    }
 
    @Inject(method = "getBrightness(Lnet/minecraft/world/dimension/DimensionType;I)F", at = @At("HEAD"), cancellable = true)
-   private static void derco$fullDimensionBrightness(class_2874 dimensionType, int lightLevel, CallbackInfoReturnable<Float> cir) {
+   private static void derco$fullDimensionBrightness(DimensionType dimensionType, int lightLevel, CallbackInfoReturnable<Float> cir) {
       if (ModuleRegistry.FULL_BRIGHT != null && ModuleRegistry.FULL_BRIGHT.k()) {
          cir.setReturnValue(1.0F);
       }
@@ -622,9 +622,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import ai.derco.module.ModuleRegistry;
 import ai.derco.modules.utilities.StreamerMode;
-import net.minecraft.class_340;
+import net.minecraft.client.gui.hud.DebugHud;
 
-@Mixin(class_340.class)
+@Mixin(DebugHud.class)
 public class DebugHudMixin {
    @ModifyVariable(method = "drawText", at = @At("HEAD"), argsOnly = true, ordinal = 0)
    private List<String> derco$hideSensitiveDebugLines(List<String> lines) {
@@ -673,9 +673,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ai.derco.module.ModuleRegistry;
-import net.minecraft.class_638;
+import net.minecraft.client.world.ClientWorld;
 
-@Mixin(class_638.class)
+@Mixin(ClientWorld.class)
 public abstract class ClientWorldMixin {
    @Inject(method = "getLightningTicksLeft", at = @At("HEAD"), cancellable = true)
    private void derco$hideWeatherLightning(CallbackInfoReturnable<Integer> cir) {
@@ -694,26 +694,26 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import ai.derco.module.ModuleRegistry;
 import ai.derco.modules.visuals.RenderTweaks;
-import net.minecraft.class_310;
-import net.minecraft.class_9848;
-import net.minecraft.class_9955;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.math.ColorHelper;
+import net.minecraft.client.render.CloudRenderer;
 
-@Mixin(class_9955.class)
+@Mixin(CloudRenderer.class)
 public class CloudRendererMixin {
    @ModifyVariable(method = "renderClouds", at = @At("HEAD"), argsOnly = true, ordinal = 0)
    private int derco$overrideCloudColor(int originalColor) {
       RenderTweaks renderTweaks = ModuleRegistry.RENDER_TWEAKS;
-      class_310 client = class_310.method_1551();
-      if (renderTweaks == null || !renderTweaks.n() || client == null || client.field_1687 == null) {
+      MinecraftClient client = MinecraftClient.getInstance();
+      if (renderTweaks == null || !renderTweaks.n() || client == null || client.world == null) {
          return originalColor;
       }
 
-      long timeOfDay = client.field_1687.method_8532();
+      long timeOfDay = client.world.getTimeOfDay();
       float daylight = Math.max(
          0.0F,
          Math.min(1.0F, (float)(Math.cos((float)(timeOfDay % 24000L) / 24000.0F * Math.PI * 2.0) * 2.0 + 0.5))
       ) * 0.9F + 0.1F;
-      return class_9848.method_61318(1.0F, daylight, daylight, daylight * 0.85F + 0.15F);
+      return ColorHelper.fromFloats(1.0F, daylight, daylight, daylight * 0.85F + 0.15F);
    }
 }
 ''', encoding='utf-8')
