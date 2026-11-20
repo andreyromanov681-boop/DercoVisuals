@@ -711,7 +711,7 @@ public class CloudRendererMixin {
       long timeOfDay = client.field_1687.method_8532();
       float daylight = Math.max(
          0.0F,
-         Math.min(1.0F, (float)(Math.cos((float)(timeOfDay % 24000L) / 24000.0F * Math.PI * 2.0) * 2.0 + 0.5)
+         Math.min(1.0F, (float)(Math.cos((float)(timeOfDay % 24000L) / 24000.0F * Math.PI * 2.0) * 2.0 + 0.5))
       ) * 0.9F + 0.1F;
       return class_9848.method_61318(1.0F, daylight, daylight, daylight * 0.85F + 0.15F);
    }
