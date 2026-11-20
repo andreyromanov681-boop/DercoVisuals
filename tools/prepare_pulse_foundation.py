@@ -562,4 +562,174 @@ for p in sorted((SRC / 'resources').rglob('*'), key=lambda item: len(item.parts)
             raise SystemExit(f'Resource rename would overwrite {target.relative_to(ROOT)}')
         p.rename(target)
 
+
+# Re-target visual hooks to the Minecraft 1.21.11 Yarn API.
+# These changes are applied to generated sources so every CI build and local
+# build receives the same working mixins instead of stale decompiler targets.
+
+lightmap_mixin_path = java_root / 'ai/derco/mixin/LightmapTextureManagerMixin.java'
+lightmap_mixin_source = lightmap_mixin_path.read_text(encoding='utf-8', errors='replace')
+if 'method = "getDarknessFactor"' not in lightmap_mixin_source:
+    raise SystemExit('Expected legacy FullBright hook was not found in LightmapTextureManagerMixin.java')
+lightmap_mixin_path.write_text('''package ai.derco.mixin;
+
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import ai.derco.module.ModuleRegistry;
+import net.minecraft.class_1309;
+import net.minecraft.class_2874;
+import net.minecraft.class_765;
+
+@Mixin(class_765.class)
+public class LightmapTextureManagerMixin {
+   @Inject(method = "getDarkness(Lnet/minecraft/entity/LivingEntity;FF)F", at = @At("HEAD"), cancellable = true)
+   private void derco$disableDarkness(class_1309 entity, float factor, float tickProgress, CallbackInfoReturnable<Float> cir) {
+      if (ModuleRegistry.FULL_BRIGHT != null && ModuleRegistry.FULL_BRIGHT.k()) {
+         cir.setReturnValue(0.0F);
+      }
+   }
+
+   @Inject(method = "getBrightness(Lnet/minecraft/world/dimension/DimensionType;I)F", at = @At("HEAD"), cancellable = true)
+   private static void derco$fullDimensionBrightness(class_2874 dimensionType, int lightLevel, CallbackInfoReturnable<Float> cir) {
+      if (ModuleRegistry.FULL_BRIGHT != null && ModuleRegistry.FULL_BRIGHT.k()) {
+         cir.setReturnValue(1.0F);
+      }
+   }
+
+   @Inject(method = "getBrightness(FI)F", at = @At("HEAD"), cancellable = true)
+   private static void derco$fullAmbientBrightness(float ambientLight, int lightLevel, CallbackInfoReturnable<Float> cir) {
+      if (ModuleRegistry.FULL_BRIGHT != null && ModuleRegistry.FULL_BRIGHT.k()) {
+         cir.setReturnValue(1.0F);
+      }
+   }
+}
+''', encoding='utf-8')
+
+# DebugHud no longer exposes getLeftText/getRightText in 1.21.11.
+# Filter the actual list passed to drawText, which is used for both columns.
+debug_hud_path = java_root / 'ai/derco/mixin/DebugHudMixin.java'
+debug_hud_source = debug_hud_path.read_text(encoding='utf-8', errors='replace')
+if 'method = "getLeftText"' not in debug_hud_source or 'method = "getRightText"' not in debug_hud_source:
+    raise SystemExit('Expected legacy Streamer Mode DebugHud hooks were not found')
+debug_hud_path.write_text('''package ai.derco.mixin;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import ai.derco.module.ModuleRegistry;
+import ai.derco.modules.utilities.StreamerMode;
+import net.minecraft.class_340;
+
+@Mixin(class_340.class)
+public class DebugHudMixin {
+   @ModifyVariable(method = "drawText", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+   private List<String> derco$hideSensitiveDebugLines(List<String> lines) {
+      StreamerMode streamerMode = ModuleRegistry.STREAMER_MODE;
+      if (lines == null || streamerMode == null || !streamerMode.k() || !streamerMode.hideDebugInfo.a()) {
+         return lines;
+      }
+
+      return lines.stream().filter(line ->
+         !line.contains("XYZ:")
+            && !line.contains("Block:")
+            && !line.contains("Chunk:")
+            && !line.contains("Facing:")
+            && !line.contains("Targeted Block:")
+            && !line.contains("Targeted Fluid:")
+            && !line.contains("Targeted Entity")
+      ).collect(Collectors.toList());
+   }
+}
+''', encoding='utf-8')
+
+# World#getTime was removed; time control is applied through getTimeOfDay.
+world_mixin_path = java_root / 'ai/derco/mixin/WorldMixin.java'
+world_mixin_source = world_mixin_path.read_text(encoding='utf-8', errors='replace')
+obsolete_time_hook = '''   @Inject(require = 0, method = "getTime", at = @At("HEAD"), cancellable = true)
+   private void onGetTime(CallbackInfoReturnable<Long> callbackInfoReturnable) {
+      Atmosphere atmosphere = ModuleRegistry.ATMOSPHERE;
+      if (atmosphere != null && atmosphere.k() && atmosphere.isTimeCustom()) {
+         callbackInfoReturnable.setReturnValue(atmosphere.getCustomTime());
+      }
+   }
+'''
+if obsolete_time_hook not in world_mixin_source:
+    raise SystemExit('Expected obsolete World#getTime hook was not found')
+world_mixin_path.write_text(world_mixin_source.replace(obsolete_time_hook, ''), encoding='utf-8')
+
+# Cloud tinting moved from ClientWorld#getCloudsColor to CloudRenderer#renderClouds.
+client_world_mixin_path = java_root / 'ai/derco/mixin/ClientWorldMixin.java'
+client_world_mixin_source = client_world_mixin_path.read_text(encoding='utf-8', errors='replace')
+if 'method = "getCloudsColor"' not in client_world_mixin_source:
+    raise SystemExit('Expected legacy ClientWorld cloud-color hook was not found')
+client_world_mixin_path.write_text('''package ai.derco.mixin;
+
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import ai.derco.module.ModuleRegistry;
+import net.minecraft.class_638;
+
+@Mixin(class_638.class)
+public abstract class ClientWorldMixin {
+   @Inject(method = "getLightningTicksLeft", at = @At("HEAD"), cancellable = true)
+   private void derco$hideWeatherLightning(CallbackInfoReturnable<Integer> cir) {
+      if (ModuleRegistry.RENDER_TWEAKS != null && ModuleRegistry.RENDER_TWEAKS.n()) {
+         cir.setReturnValue(0);
+      }
+   }
+}
+''', encoding='utf-8')
+
+cloud_renderer_path = java_root / 'ai/derco/mixin/CloudRendererMixin.java'
+cloud_renderer_path.write_text('''package ai.derco.mixin;
+
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import ai.derco.module.ModuleRegistry;
+import ai.derco.modules.visuals.RenderTweaks;
+import net.minecraft.class_310;
+import net.minecraft.class_9848;
+import net.minecraft.class_9955;
+
+@Mixin(class_9955.class)
+public class CloudRendererMixin {
+   @ModifyVariable(method = "renderClouds", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+   private int derco$overrideCloudColor(int originalColor) {
+      RenderTweaks renderTweaks = ModuleRegistry.RENDER_TWEAKS;
+      class_310 client = class_310.method_1551();
+      if (renderTweaks == null || !renderTweaks.n() || client == null || client.field_1687 == null) {
+         return originalColor;
+      }
+
+      long timeOfDay = client.field_1687.method_8532();
+      float daylight = Math.max(
+         0.0F,
+         Math.min(1.0F, (float)(Math.cos((float)(timeOfDay % 24000L) / 24000.0F * Math.PI * 2.0) * 2.0 + 0.5)
+      ) * 0.9F + 0.1F;
+      return class_9848.method_61318(1.0F, daylight, daylight, daylight * 0.85F + 0.15F);
+   }
+}
+''', encoding='utf-8')
+
+# Register the replacement cloud renderer mixin in the client mixin list.
+mixin_config_path = SRC / 'resources' / 'dercovisuals.mixins.json'
+if not mixin_config_path.exists():
+    raise SystemExit('Expected dercovisuals.mixins.json was not found')
+mixin_config = json.loads(mixin_config_path.read_text(encoding='utf-8'))
+client_mixins = mixin_config.setdefault('client', [])
+if 'CloudRendererMixin' not in client_mixins:
+    try:
+        insert_at = client_mixins.index('ClientWorldMixin') + 1
+    except ValueError:
+        insert_at = len(client_mixins)
+    client_mixins.insert(insert_at, 'CloudRendererMixin')
+mixin_config_path.write_text(json.dumps(mixin_config, indent=2) + '\\n', encoding='utf-8')
+
 print(f'Prepared DercoVisuals: {len(list((SRC / "java").rglob("*.java")))} Java files')
