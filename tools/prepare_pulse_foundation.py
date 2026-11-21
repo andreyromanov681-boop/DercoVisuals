@@ -565,6 +565,7 @@ meta = SRC / 'resources' / 'fabric.mod.json'
 metadata = json.loads(meta.read_text(encoding='utf-8'))
 metadata.update({
     'id': 'dercovisuals', 'name': 'DercoVisuals',
+    'version': '${version}',
     'description': 'A free, modular, client-side visual suite for Minecraft 1.21.11.',
     'authors': ['enizer6569'], 'license': 'LicenseRef-DercoVisuals-Community',
     'environment': 'client',
@@ -787,6 +788,32 @@ if 'CloudRendererMixin' not in client_mixins:
     except ValueError:
         insert_at = len(client_mixins)
     client_mixins.insert(insert_at, 'CloudRendererMixin')
-mixin_config_path.write_text(json.dumps(mixin_config, indent=2) + '\\n', encoding='utf-8')
+mixin_config_path.write_text(json.dumps(mixin_config, indent=2) + '\n', encoding='utf-8')
+
+# Validate generated JSON resources, Mixin source references, and the version token
+# before handing the source tree to Gradle. Compilation does not parse these runtime
+# descriptors, so a successful javac run alone cannot catch malformed metadata.
+for json_path in sorted((SRC / 'resources').rglob('*.json')):
+    try:
+        json.loads(json_path.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f'Invalid generated JSON resource {json_path.relative_to(ROOT)}: {exc}')
+
+generated_metadata = json.loads(meta.read_text(encoding='utf-8'))
+if generated_metadata.get('version') != '
+ + '{version}':
+    raise SystemExit('fabric.mod.json must retain the 
+ + '{version} token for Gradle resource expansion')
+
+generated_mixin_config = json.loads(mixin_config_path.read_text(encoding='utf-8'))
+mixin_source_root = java_root / 'ai' / 'derco' / 'mixin'
+for mixin_name in (*generated_mixin_config.get('mixins', []), *generated_mixin_config.get('client', [])):
+    mixin_source = mixin_source_root.joinpath(*mixin_name.split('.')).with_suffix('.java')
+    if not mixin_source.is_file():
+        raise SystemExit(f'Mixin config entry has no Java source: {mixin_name}')
+
+refmap_name = generated_mixin_config.get('refmap')
+if refmap_name and not (SRC / 'resources' / refmap_name).is_file():
+    raise SystemExit(f'Mixin refmap is missing: {refmap_name}')
 
 print(f'Prepared DercoVisuals: {len(list((SRC / "java").rglob("*.java")))} Java files')
