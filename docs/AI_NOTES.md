@@ -262,3 +262,15 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
   `textures/account_modal.png`.
 - Change set is isolated to `agent/derco-icons` targeting `pulse-foundation`.
   `main` and `pulse-src.zip` were not modified. CI/JAR verification is pending PR build.
+
+
+## 2026-11-21 — Verify DercoVisuals icon PR artifact
+
+- Assistant/tool: GPT-6 with GitHub connector and local runtime-JAR inspection.
+- Pull request CI run [#90](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44916181765) completed successfully on head `b656ba093c12df82a24d48a115bb6554fd6ad338`. Source generation, Java compilation/build, JAR texture verification, and artifact upload all passed.
+- Downloaded and inspected `DercoVisuals-1.0.0.jar` (16,607,142 bytes; SHA-256 `5eade50a2f8909aedddc2345a024ba9297318450c8cf2195bdd6d73f6bb7cd9e`). It contains 113 PNG textures in the DercoVisuals namespace, including all 42 new artwork assets.
+- Independent JAR validation: 42/42 generated PNGs decode and have non-zero dimensions; all 42 SHA-256 hashes are distinct; all 91 `IconTextureRegistry` resource paths resolve inside the runtime JAR; all six required legacy paths are present; `fabric.mod.json` points to the existing `assets/dercovisuals/textures/icon.png`.
+- The asset source is an original Python/Pillow illustration generator stored under `tools/assets/`; generated PNGs are copied into the Minecraft resource namespace by `tools/prepare_pulse_foundation.py`. An ImageGen service was not available in this session; the graphics are procedurally drawn original artwork, not reused third-party logos.
+- The current project has three live module categories (Visuals, HUD, Utilities). Combat, Movement, Render, Player, World, and Misc are supplied as registered thematic icon packs and are not presented as active module categories.
+- PR #5 remains open and unmerged. `main` and `pulse-src.zip` remain unchanged. In-game visual review and a Minecraft 1.21.11 client smoke-test are still outstanding.
+- Next: maintainer reviews the visual pack and tests the ClickGUI/HUD in-game before merging PR #5.
