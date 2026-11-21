@@ -220,3 +220,5 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - CI and source/JAR verification are pending. No in-game runtime test is available in this environment.
 - Next: inspect generator output and build result; verify the preLaunch metadata and uploader class inside the remapped JAR; document the exact local config path and verify upload response parsing.
 
+
+- Follow-up correction (2026-11-21): the first uploader CI attempt stopped in Python parsing because the new `entrypoints` dictionary was serialized with literal backslash-n tokens. Corrected the dictionary to normal Python source lines. This was a generator syntax issue, not a Java compile or Pastebin API failure; CI must be rerun before the feature is considered build-verified.
