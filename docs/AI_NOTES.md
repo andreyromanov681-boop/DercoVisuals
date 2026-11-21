@@ -321,3 +321,13 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Local validation before push: Python syntax check passed; the layer was applied twice to the latest generated-source artifact and remained idempotent; the friend UI no-op blocks were replaced; Mixin JSON remained valid and contained one registration.
 - Pending validation: Java 21 compile/remap/JAR verification in GitHub Actions, Mixin application and live in-game testing. This is client-side filtering of attacks initiated by this client; it is not server-side protection against every source of damage. The NoFriendDamage protection is always active through the client Mixin and is not yet represented as a visible PvP module card.
 - `main` and `pulse-src.zip` remain untouched.
+
+
+## 2026-11-22 — Add NoFriendDamage to the PvP module category
+
+- Follow-up to commit `8341b2b56aa0928553bd37053a90ef7309351fd1`. The local friends store, wired Friends tab, client attack filter and JAR verification all passed GitHub Actions run [#110](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44960554297). The built runtime JAR contains `FriendStore`, `FriendLookup`, `FriendsPanel`, `NoFriendDamage`, and `NoFriendDamageMixin`; the client Mixin list registers `NoFriendDamageMixin` exactly once. JAR SHA-256: `42be5ec8b21a07ac707591e96db77ff0637f0a3b53e182f8c92365a1c9127cd2`.
+- Added a separate deterministic post-generation script `tools/register_no_friend_damage_module.py`. It creates a visible `NoFriendDamage` module under a new `PvP` category, registers it in `ModuleRegistry`, and places PvP at the start of the category rail.
+- The module is forced active in normal and quiet config setters, reports an active state, and cannot be switched off or disabled by an old saved config. Its switch is hidden from the module card. The underlying client Mixin remains the actual attack filter and does not rely on a user toggle.
+- CI now runs the new registration script after the friends/protection layer; JAR verification also requires the module class to be packaged.
+- Validation for this follow-up is pending its own Java 21 CI build and runtime Mixin smoke test. This protection only filters attacks initiated by this client against locally listed friends; it does not prevent all server-side or other-source damage.
+- `main` and `pulse-src.zip` remain untouched.

@@ -67,6 +67,7 @@ def main() -> None:
             "ai/derco/gui/friends/FriendsPanel.class",
             "ai/derco/protection/NoFriendDamage.class",
             "ai/derco/mixin/NoFriendDamageMixin.class",
+            "ai/derco/modules/pvp/NoFriendDamageModule.class",
         }
         missing_classes = sorted(required_classes - names)
         if missing_classes:
