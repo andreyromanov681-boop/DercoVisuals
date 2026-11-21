@@ -800,6 +800,14 @@ patch_generated_java('ai/derco/mixin/DrawContextMixin.java', (
      '@Inject(method = "drawItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;III)V", at = @At("HEAD"))'),
 ))
 
+# Keep the optional stack-count text handler attached to the five-argument overload.
+# A name-only selector resolves to the four-argument overload on 1.21.11 and produces
+# an InvalidInjectionException because the handler has an additional String parameter.
+patch_generated_java('ai/derco/mixin/DrawContextMixin.java', (
+    ('@Inject(require = 0, method = "drawStackOverlay", at = @At("HEAD"), cancellable = true)',
+     '@Inject(require = 0, method = "drawStackOverlay(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/item/ItemStack;IILjava/lang/String;)V", at = @At("HEAD"), cancellable = true)'),
+))
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.
