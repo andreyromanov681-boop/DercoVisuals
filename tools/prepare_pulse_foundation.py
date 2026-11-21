@@ -1268,15 +1268,6 @@ replace_generated_once(
 )
 replace_generated_once(
     module_rows_path,
-    '      if (fontRenderer != null) {\n'
-    '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + 12.0F, f3 + f5 / 2.0F - 4.0F, textColor);\n'
-    '      } else {\n'
-    '         class_327 tr = class_310.method_1551().field_1772;\n'
-    '         class_332 dc = Renderer2DImpl.currentDrawContext;\n'
-    '         if (dc != null) {\n'
-    '            dc.method_51433(tr, guiEntry.a(), (int)(f2 + 12.0F), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\n'
-    '         }\n'
-    '      }',
     '      String moduleIconKey = moduleIconForName(guiEntry.a());\n'
     '      float textOffset = moduleIconKey == null ? 12.0F : 26.0F;\n'
     '      if (moduleIconKey != null) {\n'
@@ -1285,10 +1276,10 @@ replace_generated_once(
     '      if (fontRenderer != null) {\n'
     '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + textOffset, f3 + f5 / 2.0F - 4.0F, textColor);\n'
     '      } else {\n'
-    '         class_327 tr = class_310.method_1551().field_1772;\n'
-    '         class_332 dc = Renderer2DImpl.currentDrawContext;\n'
+    '         TextRenderer tr = MinecraftClient.getInstance().textRenderer;\n'
+    '         DrawContext dc = Renderer2DImpl.currentDrawContext;\n'
     '         if (dc != null) {\n'
-    '            dc.method_51433(tr, guiEntry.a(), (int)(f2 + textOffset), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\n'
+    '            dc.drawText(tr, guiEntry.a(), (int)(f2 + textOffset), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\n'
     '         }\n'
     '      }',
     'module card icon rendering'
