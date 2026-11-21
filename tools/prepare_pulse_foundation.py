@@ -1139,6 +1139,218 @@ patch_generated_java('ai/derco/DercoVisuals.java', (
      '        });'),
 ))
 
+# ---------------------------------------------------------------------------
+# DercoVisuals ClickGUI redesign — generator-owned source transformation.
+# Module registry, setting models, and input dispatch are intentionally retained.
+# ---------------------------------------------------------------------------
+palette_migrations = {
+    (139, 92, 246): (35, 145, 255),
+    (115, 83, 255): (30, 140, 255),
+    (126, 90, 254): (42, 156, 255),
+    (106, 70, 215): (15, 108, 218),
+    (70, 46, 174): (12, 82, 180),
+    (140, 110, 255): (70, 172, 255),
+    (135, 95, 255): (48, 156, 255),
+    (95, 65, 200): (20, 112, 218),
+    (110, 70, 255): (30, 140, 255),
+    (80, 60, 150): (18, 90, 165),
+    (52, 40, 95): (17, 58, 102),
+    (38, 30, 72): (12, 35, 65),
+    (55, 50, 85): (16, 55, 100),
+    (60, 55, 95): (20, 64, 110),
+    (50, 50, 75): (16, 48, 82),
+    (36, 30, 56): (16, 48, 72),
+    (38, 34, 52): (24, 70, 118),
+    (18, 16, 23): (8, 18, 32),
+    (25, 25, 33): (16, 36, 60),
+    (18, 18, 24): (9, 20, 35),
+    (24, 23, 32): (17, 39, 64),
+    (20, 19, 28): (12, 28, 48),
+    (13, 12, 17): (6, 14, 27),
+    (10, 10, 14): (4, 10, 20),
+    (26, 25, 34): (16, 39, 65),
+    (15, 14, 19): (8, 17, 31),
+    (22, 21, 28): (12, 27, 46),
+    (28, 28, 40): (14, 31, 52),
+    (26, 26, 38): (11, 24, 42),
+    (34, 30, 48): (13, 30, 54),
+}
+palette_files = [java_root / 'ai/derco/theme/Theme.java']
+palette_files.extend(sorted((java_root / 'ai/derco/gui').rglob('*.java')))
+for palette_path in palette_files:
+    if not palette_path.is_file():
+        continue
+    palette_source = palette_path.read_text(encoding='utf-8', errors='replace')
+    for old_rgb, new_rgb in palette_migrations.items():
+        old_pattern = re.compile(
+            rf'new Color\(\s*{old_rgb[0]}\s*,\s*{old_rgb[1]}\s*,\s*{old_rgb[2]}'
+        )
+        new_color = f'new Color({new_rgb[0]}, {new_rgb[1]}, {new_rgb[2]}'
+        palette_source = old_pattern.sub(new_color, palette_source)
+    palette_path.write_text(palette_source, encoding='utf-8')
+
+# Responsive frame: keep the existing ScreenScale and all input callbacks intact.
+patch_generated_java('ai/derco/gui/core/DercoVisualsClickGuiScreen.java', (
+    ('private static final float c = 411.0F;', 'private static final float c = 520.0F;'),
+    ('private static final float d = 243.5F;', 'private static final float d = 270.0F;'),
+    ('return GuiInput.a(f2, f3, 411.0F, 243.5F, i, i2);',
+     'return GuiInput.a(f2, f3, d(), e(), i, i2);'),
+    ('MinecraftContext.getWidth() / 4.0F - 205.5F',
+     'MinecraftContext.getWidth() / 4.0F - d() / 2.0F'),
+    ('MinecraftContext.getHeight() / 4.0F - 121.75F',
+     'MinecraftContext.getHeight() / 4.0F - e() / 2.0F'),
+    ('''   public static float d() {
+      return 411.0F;
+   }''',
+     '''   public static float d() {
+      return Math.max(320.0F, Math.min(520.0F, MinecraftContext.getWidth() / 2.0F - 32.0F));
+   }'''),
+    ('''   public static float e() {
+      return 243.5F;
+   }''',
+     '''   public static float e() {
+      return Math.max(180.0F, Math.min(270.0F, MinecraftContext.getHeight() / 2.0F - 28.0F));
+   }'''),
+))
+
+# Dock positions follow the responsive frame rather than old hard-coded dimensions.
+dock_path = java_root / 'ai/derco/gui/core/DockPanelController.java'
+dock_source = dock_path.read_text(encoding='utf-8', errors='replace')
+dock_source = dock_source.replace('411.0F', 'DercoVisualsClickGuiScreen.d()')
+dock_source = dock_source.replace('243.5F', 'DercoVisualsClickGuiScreen.e()')
+dock_path.write_text(dock_source, encoding='utf-8')
+
+# Dock the selected module's settings card inside the right edge of the main frame.
+patch_generated_java('ai/derco/gui/modules/ModuleCardList.java', (
+    ('''   public boolean hasOpenPanelAt(int i, int i2) {
+      for (ModuleCard moduleCard : this.c) {
+         if (!moduleCard.f() && (moduleCard.d(i, i2) || moduleCard.f(i, i2))) {
+            return true;
+         }
+      }
+
+      return false;
+   }''',
+     '''   public boolean hasOpenPanelAt(int i, int i2) {
+      for (ModuleCard moduleCard : this.c) {
+         if (!moduleCard.f() && (moduleCard.d(i, i2) || moduleCard.f(i, i2))) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   public boolean hasSettingsPanelOpen() {
+      for (ModuleCard moduleCard : this.c) {
+         if (!moduleCard.f() && !moduleCard.g()) {
+            return true;
+         }
+      }
+
+      return false;
+   }'''),
+    ('MinecraftContext.getWidth() / 4.0F - 205.5F',
+     'MinecraftContext.getWidth() / 4.0F - DercoVisualsClickGuiScreen.d() / 2.0F'),
+    ('float panelX = z ? rightGui + 20.0F : leftGui - 20.0F - 150.0F;',
+     'float panelX = rightGui - 160.0F;'),
+))
+
+# Reserve grid width for the inspector, keeping existing setting widgets and input.
+patch_generated_java('ai/derco/gui/modules/ModuleGrid.java', (
+    ('''   public ModuleGrid(GuiEntrySource guiEntrySource) {
+      this.a = guiEntrySource;
+   }
+
+   public List<ModuleCard> a() {''',
+     '''   public ModuleGrid(GuiEntrySource guiEntrySource) {
+      this.a = guiEntrySource;
+   }
+
+   private float contentWidth() {
+      return Math.max(150.0F, DercoVisualsClickGuiScreen.d() - (this.i.hasSettingsPanelOpen() ? 166.0F : 0.0F));
+   }
+
+   public boolean hasSettingsPanelOpen() {
+      return this.i.hasSettingsPanelOpen();
+   }
+
+   public List<ModuleCard> a() {'''),
+    ('''   private float k() {
+      int iF = this.a.f();
+      float fD = DercoVisualsClickGuiScreen.d() - 38.0F;
+      return iF == 1 ? fD - 2.0F : (fD - 6.5F) / 2.0F - 1.0F;
+   }''',
+     '''   private float k() {
+      int columns = Math.max(1, this.a.f());
+      float available = this.contentWidth() - 38.0F;
+      return Math.max(72.0F, (available - 6.5F * (columns - 1)) / columns - 1.0F);
+   }'''),
+    ('GuiLayerRegistry.a().a(GuiLayerRegistry.Layer.CONTENT, f2, f4, DercoVisualsClickGuiScreen.d(), fE);',
+     'GuiLayerRegistry.a().a(GuiLayerRegistry.Layer.CONTENT, f2, f4, this.contentWidth(), fE);'),
+    ('renderer2D.b().a(f2, f4, DercoVisualsClickGuiScreen.d(), fE, MatrixStackVar);',
+     'renderer2D.b().a(f2, f4, this.contentWidth(), fE, MatrixStackVar);'),
+    ('this.h.a(MatrixStackVar, renderer2D, f2 + DercoVisualsClickGuiScreen.d() - 2.0F, f4, fE, fCeil, fE, i, i2, false);',
+     'this.h.a(MatrixStackVar, renderer2D, f2 + this.contentWidth() - 2.0F, f4, fE, fCeil, fE, i, i2, false);'),
+    ('int i6 = i5 % 2;', 'int i6 = i5 % iF;'),
+    ('float f11 = f9 + i5 / 2 * 34.0F + 1.0F;', 'float f11 = f9 + i5 / iF * 34.0F + 1.0F;'),
+))
+
+patch_generated_java('ai/derco/gui/modules/ModulesTab.java', (
+    ('''   @Override
+   public int f() {
+      return 2;
+   }''',
+     '''   @Override
+   public int f() {
+      float availableWidth = DercoVisualsClickGuiScreen.d() - (this.m.hasSettingsPanelOpen() ? 166.0F : 0.0F);
+      return Math.max(1, Math.min(3, (int)((availableWidth - 38.0F) / 145.0F)));
+   }'''),
+    ('private static final float c = 117.5F;', 'private static final float c = 140.0F;'),
+    ('new SearchBox(117.5F, 15.0F)', 'new SearchBox(140.0F, 15.0F)'),
+    ('fD - 4.0F - 117.5F', 'fD - 4.0F - 140.0F'),
+))
+
+# Rebuild module cards with a subtle navy gradient and animated electric-blue edge.
+patch_generated_java('ai/derco/gui/modules/ModuleRowRenderer.java', (
+    ('''      Color cardBorder = new Color(25, 25, 33);
+      renderer2D.a(f2 - 0.5F, f3 - 0.5F, f4 + 1.0F, f5 + 1.0F, 9.5F, cardBorder, cardBorder, cardBorder, cardBorder, MatrixStackVar);
+      Color cardBg = new Color(18, 18, 24);
+      renderer2D.a(f2, f3, f4, f5, 9.5F, cardBg, cardBg, cardBg, cardBg, MatrixStackVar);''',
+     '''      Color cardBorder = new Color(20, 76, 126, 118 + (int)(f6 * 120.0F));
+      renderer2D.a(f2 - 0.5F, f3 - 0.5F, f4 + 1.0F, f5 + 1.0F, 9.5F, cardBorder, cardBorder, cardBorder, cardBorder, MatrixStackVar);
+      Color cardTop = new Color(12, 31, 53);
+      Color cardBottom = new Color(8, 19, 34);
+      renderer2D.a(f2, f3, f4, f5, 9.5F, cardTop, cardTop, cardBottom, cardBottom, MatrixStackVar);
+      if (f6 > 0.01F) {
+         Color hoverGlow = new Color(35, 145, 255, (int)(58.0F * f6));
+         renderer2D.a(f2 + 8.0F, f3 + 1.0F, Math.max(0.0F, f4 - 16.0F), 0.8F, hoverGlow, MatrixStackVar);
+      }'''),
+))
+
+# Category buttons gain clear rounded selected/hover treatments; hit testing is unchanged.
+patch_generated_java('ai/derco/gui/core/TabSelector.java', (
+    ('''            fontRenderer.a(
+               strArrC[i4],''',
+     '''            Color pillBorder = i5 != 0
+               ? new Color(42, 151, 255, 190)
+               : new Color(26, 67, 104, (int)(105.0F + 50.0F * this.i.get(i4).j()));
+            Color pillBackground = i5 != 0
+               ? new Color(18, 91, 158, 125)
+               : new Color(8, 22, 38, 185);
+            renderer2D.a(
+               fFloatValue - 6.0F,
+               f4 - 5.0F,
+               this.l.get(i4) + 12.0F,
+               17.0F,
+               6.0F,
+               pillBorder, pillBorder, pillBackground, pillBackground,
+               MatrixStackVar
+            );
+            fontRenderer.a(
+               strArrC[i4],'''),
+))
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.

@@ -237,3 +237,15 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - The first two intermediate CI attempts (#68 and #69) stopped in the generator's guarded patch stage because the initial patch expected post-rebrand filenames before that transformation had run. The replacement patch now uses the actual upstream pulseicon.ttf and pulse_icons.ttf anchors and passes source generation.
 - pulse-src.zip, main, and other branches were not modified. No credentials or Pastebin API keys were added.
 - Next: verify the final CI build artifact, inspect the remapped FontManager resource strings and packaged font entries, then ask the user to test startup with the new JAR.
+
+
+## 2026-11-21 — ClickGUI redesign
+
+- Assistant/tool: ChatGPT using the connected GitHub repository tools.
+- Working branch: agent/clickgui-redesign, based on pulse-foundation HEAD cc6f86c314e5fe78752c1e2d025449f427fe5dfd.
+- Updated only tools/prepare_pulse_foundation.py as the source of truth and this handoff note. No generated Java files, module implementations, module registry, config serializers, main, or pulse-src.zip were edited.
+- ClickGUI changes: electric-blue/cyan palette over deep navy surfaces; gradient module cards and blue active/hover treatments; category pills; larger search field; responsive frame dimensions and 1–3 column module grid; a fixed right-side module-settings inspector that reserves grid space while open.
+- Existing module instances, setting models/widgets, Right Shift registration, and mouse/keyboard dispatch are retained. The inspector uses the existing ModuleCard and SettingWidgetList path, so setting values remain connected to the original config model.
+- Baseline verification: pulse-foundation HEAD passed GitHub Actions run #71 (44912546747) with Java 21 / Gradle 9.2.1. The generated-Java diagnostic artifact was downloaded and inspected before editing.
+- Redesign verification: pending GitHub Actions on agent/clickgui-redesign. An in-game render/input/persistence smoke test is not available in this GitHub-connected environment.
+- Next: verify source generation and compilation in Actions, inspect the generated-source artifact, then review the PR diff. After merge, manually test Right Shift, mouse click/drag/scroll, search typing, setting edits, config reload, and smaller GUI scales.
