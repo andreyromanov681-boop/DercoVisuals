@@ -791,6 +791,15 @@ if 'CloudRendererMixin' not in client_mixins:
     client_mixins.insert(insert_at, 'CloudRendererMixin')
 mixin_config_path.write_text(json.dumps(mixin_config, indent=2) + '\n', encoding='utf-8')
 
+# Disambiguate DrawContext's overloaded drawItem method. In Yarn 1.21.11+build.3,
+# the intended private implementation takes (LivingEntity, World, ItemStack, x, y, seed).
+# A name-only selector also matches drawItem(ItemStack, x, y), which caused the runtime
+# InvalidInjectionException observed with Fabric Loader 0.19.5.
+patch_generated_java('ai/derco/mixin/DrawContextMixin.java', (
+    ('@Inject(method = "drawItem", at = @At("HEAD"))',
+     '@Inject(method = "drawItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/world/World;Lnet/minecraft/item/ItemStack;III)V", at = @At("HEAD"))'),
+))
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.
