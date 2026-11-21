@@ -254,3 +254,6 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 
 
 - Follow-up after initial PR CI run #74: the guarded source generator stopped at the Armor HUD patch because the decompiler-generated `InGameHudMixin` loop indentation differed from the longer block anchor. The preceding HUD patch anchors all matched and the CI diagnostic artifact was uploaded. Replaced the fragile whole-loop replacement with a small exact insertion after the existing offhand-offset calculation; the four original armor item render calls and their positions remain unchanged. Correction commit: `27902f7cff2e10150a2e6ef93377ace47b5a6d95`. Re-run CI is pending.
+
+
+- Follow-up correction after CI run #76: while narrowing the armor insertion, the replacement initially matched an earlier legacy `InGameHudMixin` patch anchor and removed a later generator section. Restored the complete generator from the prior HUD commit, replaced only the final Armor HUD patch block (verified replacement range: 1,798 characters), and confirmed the `CrashLogBootstrap` generation/validation section remains present. Also moved the default Hotkeys panel down to y=238 to give the Potion Effects panel more room. Correction commit: `372eb19718c1bdab268ce4d75e8e29df74a98298`; CI run pending.
