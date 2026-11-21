@@ -492,6 +492,45 @@ player_list_source = player_list_source.replace(
     'net.minecraft.network.packet.s2c.play.PlayerRemoveS2CPacket'
 )
 player_list.write_text(player_list_source, encoding='utf-8')
+
+# The upstream player tracker silently uploads the local username to a remote
+# Supabase table on multiplayer joins. It also creates a fresh single-thread
+# executor for each request without shutting it down. DercoVisuals is explicitly
+# offline-first and must not register or track player names remotely.
+tracker_path = java_root / 'ai/derco/player/DercoVisualsPlayerTracker.java'
+if not tracker_path.exists():
+    raise SystemExit('Expected upstream player-registration tracker was not found')
+tracker_path.unlink()
+patch_generated_java('ai/derco/DercoVisuals.java', (
+    ('import ai.derco.player.DercoVisualsPlayerTracker;\n', ''),
+    ('        DercoVisualsPlayerTracker.get().init();\n', ''),
+))
+patch_generated_java('ai/derco/mixin/EntityRendererMixin.java', (
+    ('import ai.derco.player.DercoVisualsPlayerTracker;\n', ''),
+    ('boolean has = PlayerListCache.c().a(name) || DercoVisualsPlayerTracker.get().has(name);',
+     'boolean has = PlayerListCache.c().a(name);'),
+))
+patch_generated_java('ai/derco/mixin/PlayerListHudMixin.java', (
+    ('import ai.derco.player.DercoVisualsPlayerTracker;\n', ''),
+    ('import ai.derco.modules.visuals.TabCustomizer;\n',
+     'import ai.derco.modules.visuals.TabCustomizer;\nimport ai.derco.player.PlayerListCache;\n'),
+    ('&& DercoVisualsPlayerTracker.get().has(str2)) {',
+     '&& PlayerListCache.c().a(str2)) {'),
+))
+
+# Fail the source-generation step if the remote player tracker is accidentally
+# reintroduced by a future archive refresh or source migration.
+for generated_java in java_root.rglob('*.java'):
+    generated_source = generated_java.read_text(encoding='utf-8', errors='replace')
+    if any(marker in generated_source for marker in (
+        'DercoVisualsPlayerTracker',
+        '.supabase.co',
+        'rest/v1/derco_users',
+    )):
+        raise SystemExit(
+            f'Unexpected remote player-registration code remains in {generated_java.relative_to(java_root)}'
+        )
+
 # Rebrand resource namespace and remove Pulse-only auth/brand assets where not referenced.
 for p in (SRC / 'resources').rglob('*'):
     if p.is_file() and p.suffix.lower() in ('.json', '.fsh', '.vsh', '.frag', '.glsl', '.txt'):

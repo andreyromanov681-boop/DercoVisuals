@@ -110,3 +110,13 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Inspected the generated `FontManager.java` artifact: the manual decompiler field is absent while `assert resourceAsStream != null;` remains. Inspected the built JAR with `javap`: the remaining `$assertionsDisabled` field is javac's expected synthetic field.
 - The CI uploaded `DercoVisuals-1.0.0.jar` and its sources. No changes were made to `main` or any other branch.
 - Remaining follow-up: investigate Loom's non-fatal "Cannot remap" warnings for several mixin targets/methods and perform in-game font/render smoke tests. Also add automated tests where practical.
+
+
+## 2026-11-21 — Remove automatic player-name registration
+
+- Inspected the generated Java artifact from the last successful pulse-foundation CI run and confirmed that DercoVisualsPlayerTracker was initialized during client startup, fetched a remote Supabase user list, and POSTed the local player's username on multiplayer joins.
+- The tracker created a new daemon single-thread executor for each fetch/register operation without shutting it down. Repeated joins could therefore leave idle worker threads behind; the outbound username registration also contradicted the project's documented offline-first / no-telemetry policy.
+- Updated tools/prepare_pulse_foundation.py (the source of truth) to omit the tracker class and initialization. Nameplate and tab-list badge checks now use only the existing local PlayerListCache lookup; no remote registration path is retained.
+- Added a fail-fast generator guard that rejects the tracker class reference and its Supabase endpoint/table markers if they reappear in generated Java.
+- Pre-commit validation: applied the exact patch to the 436 Java files from the latest generated-source CI artifact; all expected source patterns matched, the tracker was removed, local cache checks remained, and no tracker reference or backend endpoint remained. GitHub Actions build verification for the new commit is pending. No in-game runtime smoke test was available.
+- Next: verify the new branch CI build and manually smoke-test player nameplate/tab icons in Minecraft 1.21.11.
