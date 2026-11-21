@@ -237,3 +237,17 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - The first two intermediate CI attempts (#68 and #69) stopped in the generator's guarded patch stage because the initial patch expected post-rebrand filenames before that transformation had run. The replacement patch now uses the actual upstream pulseicon.ttf and pulse_icons.ttf anchors and passes source generation.
 - pulse-src.zip, main, and other branches were not modified. No credentials or Pastebin API keys were added.
 - Next: verify the final CI build artifact, inspect the remapped FontManager resource strings and packaged font entries, then ask the user to test startup with the new JAR.
+
+
+## 2026-11-21 — HUD visual redesign (agent/hud-redesign)
+
+- Assistant/tool: ChatGPT GitHub-assisted HUD redesign session.
+- Created isolated branch `agent/hud-redesign` from the current `pulse-foundation` tip (`cc6f86c314e5fe78752c1e2d025449f427fe5dfd`). Retrieved and inspected the latest successful CI run #71 artifacts, including the generated Java diagnostic bundle and remapped project JAR.
+- All source changes are made through `tools/prepare_pulse_foundation.py`, which remains the sole source-of-truth generator. `pulse-src.zip`, `main`, and ClickGUI are not edited.
+- Added a shared navy / graphite / cyan-blue HUD theme and applied it to the watermark, target, inventory, totems, potion effects, cooldowns, hotkeys, scoreboard/bossbar preview surfaces, snap guides, hover feedback, and HUD notifications. Replaced purple/pink defaults in the HUD color selection palette with blue/cyan defaults.
+- Added an optional-by-setting (default enabled) coordinate readout to the existing watermark information strip; FPS and ping display settings remain intact.
+- Expanded the active Hotkeys panel to include every enabled module; modules without a key binding show a neutral em dash rather than disappearing.
+- Adjusted initial HUD placements to reduce default collisions while keeping existing user-configured normalized positions, drag/resize controls, animation state, and local config serialization intact. Armor HUD retains the same four armor-item renders and now receives a restrained navy panel and cyan top edge.
+- Latest baseline artifact: CI run #71 passed on `pulse-foundation`. The new branch commit with the HUD generator patch is `c8ea02dce0f1b0270c82700263b4a65cb4ffd844`. The branch PR CI is pending at the time of this note.
+- No Minecraft client was launched in this environment, so actual in-game overlap at multiple GUI scales, animation feel, and saved-layout restart behavior still require runtime confirmation. No HUD function was intentionally removed or replaced with a placeholder.
+- Next: pass the PR CI source-generation, Java compile, and remapped-JAR checks; inspect the generated sources/remapped JAR; then validate in-game at 16:9 and a smaller GUI scale.
