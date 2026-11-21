@@ -237,3 +237,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - The first two intermediate CI attempts (#68 and #69) stopped in the generator's guarded patch stage because the initial patch expected post-rebrand filenames before that transformation had run. The replacement patch now uses the actual upstream pulseicon.ttf and pulse_icons.ttf anchors and passes source generation.
 - pulse-src.zip, main, and other branches were not modified. No credentials or Pastebin API keys were added.
 - Next: verify the final CI build artifact, inspect the remapped FontManager resource strings and packaged font entries, then ask the user to test startup with the new JAR.
+
+## 2026-11-21 — Add shared blue theme system foundation
+
+- Assistant/tool: ChatGPT GPT-6 via GitHub integration.
+- Inspected `AGENTS.md`, this handoff file, the `pulse-foundation` branch, the source generator, Gradle configuration, and CI workflow before editing. Base branch head: `cc6f86c314e5fe78752c1e2d025449f427fe5dfd`; its latest observed CI run was #71 and passed.
+- Created isolated branch `agent/blue-theme-system` from that exact base. `main`, `pulse-foundation`, and `pulse-src.zip` were not edited.
+- Added eight renderer-independent Java API classes under generated package `ai.derco.theme`: `ThemeColors` (ARGB tokens), `ThemeSettings` (immutable user theme preferences), `DercoTheme` (shared facade and accent override), `ThemeMetrics` (corner radii/spacing), `ThemeEffects` (shadow/glow descriptors), `ThemeGradients` (gradient endpoint/interpolation helpers), `ThemeAnimation` (frame-delta transitions/reduced-motion behavior), and `ThemeContrast` (WCAG contrast checking and readable text selection).
+- The API is emitted from `tools/prepare_pulse_foundation.py` after the archive rebrand/patch steps. Generated `src/main/java` is not treated as the source of truth. No ClickGUI/HUD implementations were rewritten, no dependencies or worker threads were added.
+- Added `docs/THEME_SYSTEM.md` with compile-time API examples and integration boundaries. The default text palette's minimum calculated contrast across the four standard surfaces is approximately 4.71:1; the Java API also exposes `ThemeContrast.defaultPalettePasses()` and per-color WCAG checks.
+- Validation at note time: source and documentation commits are on the isolated agent branch; the branch CI build and PR-triggered CI are pending. No local Gradle build was claimed. After PR creation, inspect the generator step first, then `:compileJava` / `build`, and fix only failures confirmed by CI.
+- Next: verify generated theme sources, successful Java 21 build, and PR CI; keep the PR open for maintainer review without merging.
