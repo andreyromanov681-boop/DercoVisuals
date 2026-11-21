@@ -1,6 +1,10 @@
 package ai.derco;
 
+import ai.derco.theme.DercoTheme;
+import ai.derco.theme.ThemeColors;
+import ai.derco.theme.ThemeMetrics;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -10,27 +14,25 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-
+/**
+ * Client entrypoint and HUD renderer.
+ *
+ * <p>The HUD reads finished strings and stacks from {@link HudCache}; this class
+ * only positions and draws them with the Electric Blue palette. All per-frame
+ * text formatting, inventory scanning and collection allocation live in the cache
+ * and run at tick rate (or slower), never once per frame.</p>
+ */
 public class DercoVisualsClient implements ClientModInitializer {
     public static final String MOD_ID = "dercovisuals";
     public static final Logger LOGGER = LoggerFactory.getLogger("DercoVisuals");
 
-    private static final int ACCENT = 0xFF9A83FF;
-    private static final int AQUA = 0xFF61D9D0;
-    private static final int WHITE = 0xFFF1F4FC;
-    private static final int MUTED = 0xFFB7C3D8;
-    private static final int PANEL = 0xB9101727;
-    private static final DateTimeFormatter CLOCK_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final int ROW_H = 18;
 
     private KeyBinding menuKey;
     private KeyBinding fullbrightKey;
@@ -47,7 +49,10 @@ public class DercoVisualsClient implements ClientModInitializer {
                 "key.dercovisuals.zoom", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_C, category));
 
         Modules.loadConfig();
+        DercoTheme.settings(); // touch once so the first render already uses saved values
+
         ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> DercoConfig.flush());
         HudElementRegistry.attachElementAfter(
                 VanillaHudElements.MISC_OVERLAYS,
                 Identifier.of(MOD_ID, "hud"),
@@ -65,6 +70,9 @@ public class DercoVisualsClient implements ClientModInitializer {
         }
         boolean zoomHeld = zoomKey.isPressed() && client.currentScreen == null && client.player != null;
         Modules.updateZoom(client, zoomHeld);
+
+        HudCache.update(client);
+        DercoConfig.tick();
     }
 
     private void renderHud(DrawContext context) {
@@ -73,49 +81,51 @@ public class DercoVisualsClient implements ClientModInitializer {
 
         int screenWidth = client.getWindow().getScaledWidth();
         int screenHeight = client.getWindow().getScaledHeight();
-        int leftColumnY = 8;
+        int leftColumnY = ThemeMetrics.HUD_MARGIN;
 
         if (Modules.INFO_HUD.isEnabled()) {
-            int x = 8;
-            int y = 8;
-            context.fill(x, y, x + 214, y + 56, PANEL);
-            context.fill(x, y, x + 3, y + 56, ACCENT);
-            context.drawTextWithShadow(client.textRenderer, "DERCO VISUALS", x + 11, y + 7, WHITE);
-            context.drawText(client.textRenderer, "FPS  " + client.getCurrentFps(),
-                    x + 11, y + 22, MUTED, false);
-            context.drawText(client.textRenderer,
-                    String.format("XYZ  %.1f  %.1f  %.1f",
-                            client.player.getX(), client.player.getY(), client.player.getZ()),
-                    x + 11, y + 37, MUTED, false);
-            leftColumnY = 70;
+            int x = ThemeMetrics.HUD_MARGIN;
+            int y = ThemeMetrics.HUD_MARGIN;
+            int panel = ThemeColors.HUD_PANEL;
+            context.fill(x, y, x + 214, y + 56, panel);
+            context.fill(x, y, x + ThemeMetrics.HUD_ACCENT_W, y + 56, ThemeColors.PRIMARY);
+            context.drawTextWithShadow(client.textRenderer, "DERCO VISUALS",
+                    x + 11, y + 7, ThemeColors.TEXT);
+            context.drawText(client.textRenderer, "FPS  " + HudCache.fpsText(),
+                    x + 11, y + 22, ThemeColors.TEXT_SECONDARY, false);
+            context.drawText(client.textRenderer, "XYZ  " + HudCache.coordsText(),
+                    x + 11, y + 37, ThemeColors.TEXT_SECONDARY, false);
+            leftColumnY = y + 62;
         }
 
         if (Modules.COMPASS.isEnabled()) {
-            String direction = client.player.getHorizontalFacing().asString().toUpperCase();
-            drawHudCard(context, client, 8, leftColumnY, 112, 22,
-                    "FACING", direction, AQUA);
+            drawHudCard(context, client, ThemeMetrics.HUD_MARGIN, leftColumnY, 112, 22,
+                    "FACING", HudCache.facingText(), ThemeColors.ACCENT);
             leftColumnY += 28;
         }
 
         if (Modules.POTION_HUD.isEnabled()) {
-            int effectCount = 0;
-            for (StatusEffectInstance effect : client.player.getStatusEffects()) {
-                if (effectCount >= 5) break;
-                String effectName = Text.translatable(effect.getTranslationKey()).getString();
-                String amplifier = romanAmplifier(effect.getAmplifier() + 1);
-                String duration = formatDuration(effect.getDuration());
-                String line = trim(effectName + " " + amplifier + "  ·  " + duration, 31);
-                int width = Math.max(156, client.textRenderer.getWidth(line) + 20);
-                context.fill(8, leftColumnY, 8 + width, leftColumnY + 20, PANEL);
-                context.fill(8, leftColumnY, 10, leftColumnY + 20, ACCENT);
-                context.drawText(client.textRenderer, line, 15, leftColumnY + 6, WHITE, false);
-                leftColumnY += 23;
-                effectCount++;
-            }
-            if (effectCount == 0) {
-                context.fill(8, leftColumnY, 154, leftColumnY + 20, PANEL);
+            var lines = HudCache.effectLines();
+            if (lines.isEmpty()) {
+                context.fill(ThemeMetrics.HUD_MARGIN, leftColumnY,
+                        ThemeMetrics.HUD_MARGIN + 154, leftColumnY + 20,
+                        ThemeColors.HUD_PANEL);
                 context.drawText(client.textRenderer, "NO ACTIVE EFFECTS",
-                        15, leftColumnY + 6, MUTED, false);
+                        ThemeMetrics.HUD_MARGIN + 7, leftColumnY + 6, ThemeColors.MUTED, false);
+            } else {
+                int panel = ThemeColors.HUD_PANEL;
+                for (String line : lines) {
+                    int width = Math.max(156, client.textRenderer.getWidth(line) + 20);
+                    context.fill(ThemeMetrics.HUD_MARGIN, leftColumnY,
+                            ThemeMetrics.HUD_MARGIN + width, leftColumnY + 20, panel);
+                    context.fill(ThemeMetrics.HUD_MARGIN, leftColumnY,
+                            ThemeMetrics.HUD_MARGIN + 2, leftColumnY + 20,
+                            ThemeColors.PRIMARY);
+                    context.drawText(client.textRenderer, line,
+                            ThemeMetrics.HUD_MARGIN + 7, leftColumnY + 6,
+                            ThemeColors.TEXT, false);
+                    leftColumnY += 23;
+                }
             }
         }
 
@@ -125,29 +135,21 @@ public class DercoVisualsClient implements ClientModInitializer {
         }
 
         if (Modules.MODULE_LIST.isEnabled()) {
-            int y = 8;
-            for (Module module : Modules.ALL) {
-                if (!module.isEnabled() || module == Modules.MODULE_LIST) continue;
-                String label = module.title;
-                int textWidth = client.textRenderer.getWidth(label);
-                int x = screenWidth - textWidth - 22;
-                context.fill(x - 7, y - 3, screenWidth - 8, y + 12, PANEL);
-                context.fill(screenWidth - 10, y - 3, screenWidth - 8, y + 12, ACCENT);
-                context.drawTextWithShadow(client.textRenderer, label, x, y, WHITE);
-                y += 18;
-            }
+            drawModuleList(context, client, screenWidth);
         }
 
         if (Modules.CLOCK.isEnabled()) {
-            String clock = LocalTime.now().format(CLOCK_FORMAT);
-            String label = "LOCAL  " + clock;
+            String label = "LOCAL  " + HudCache.clockText();
             int width = client.textRenderer.getWidth(label) + 18;
-            int x = screenWidth - width - 8;
+            int x = screenWidth - width - ThemeMetrics.HUD_MARGIN;
+            // Sits under the module list instead of overlapping it.
             int y = Modules.MODULE_LIST.isEnabled()
-                    ? 12 + (int) Modules.ALL.stream().filter(Module::isEnabled).count() * 18
-                    : 8;
-            context.fill(x, y, x + width, y + 22, PANEL);
-            context.drawTextWithShadow(client.textRenderer, label, x + 9, y + 7, AQUA);
+                    ? HudCache.moduleListBottom() + 4
+                    : ThemeMetrics.HUD_MARGIN;
+            context.fill(x, y, x + width, y + 22, ThemeColors.HUD_PANEL);
+            context.fill(x, y, x + width, y + 1, ThemeColors.ACCENT);
+            context.drawTextWithShadow(client.textRenderer, label, x + 9, y + 7,
+                    ThemeColors.ACCENT);
         }
 
         if (Modules.COOLDOWNS_HUD.isEnabled()) {
@@ -167,15 +169,26 @@ public class DercoVisualsClient implements ClientModInitializer {
         }
 
         if (Modules.SPEED_HUD.isEnabled()) {
-            var velocity = client.player.getVelocity();
-            double speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z) * 20.0;
-            String speedText = String.format("%.2f b/s", speed);
             drawHudCard(context, client, screenWidth - 116, screenHeight - 42,
-                    108, 24, "SPEED", speedText, AQUA);
+                    108, 24, "SPEED", HudCache.speedText() + " b/s", ThemeColors.ACCENT);
         }
 
         if (Modules.KEYSTROKES.isEnabled()) {
             renderKeystrokes(context, client, screenHeight);
+        }
+    }
+
+    private static void drawModuleList(DrawContext context, MinecraftClient client, int screenWidth) {
+        var labels = HudCache.moduleLabels();
+        int y = ThemeMetrics.HUD_MARGIN;
+        int panel = ThemeColors.HUD_PANEL;
+        for (String label : labels) {
+            int textWidth = client.textRenderer.getWidth(label);
+            int x = screenWidth - textWidth - 22;
+            context.fill(x - 7, y - 3, screenWidth - 8, y + 12, panel);
+            context.fill(screenWidth - 10, y - 3, screenWidth - 8, y + 12, ThemeColors.PRIMARY);
+            context.drawTextWithShadow(client.textRenderer, label, x, y, ThemeColors.TEXT);
+            y += ROW_H;
         }
     }
 
@@ -189,7 +202,7 @@ public class DercoVisualsClient implements ClientModInitializer {
         int totalWidth = slots.length * slotWidth;
         int x = screenWidth / 2 - totalWidth / 2;
         int y = screenHeight - 34;
-        context.fill(x - 7, y - 6, x + totalWidth + 3, y + 27, PANEL);
+        context.fill(x - 7, y - 6, x + totalWidth + 3, y + 27, ThemeColors.HUD_PANEL);
 
         for (EquipmentSlot slot : slots) {
             ItemStack stack = client.player.getEquippedStack(slot);
@@ -199,14 +212,14 @@ public class DercoVisualsClient implements ClientModInitializer {
                 if (stack.isDamageable()) {
                     int remaining = Math.max(0,
                             100 - stack.getDamage() * 100 / stack.getMaxDamage());
-                    int color = remaining <= 20 ? 0xFFFF707D : AQUA;
+                    int color = remaining <= 20 ? ThemeColors.DANGER : ThemeColors.ACCENT;
                     String value = remaining + "%";
                     int width = client.textRenderer.getWidth(value);
                     context.drawText(client.textRenderer, value,
                             x + (slotWidth - width) / 2 + 3, y + 18, color, false);
                 }
             } else {
-                context.fill(x + 8, y + 5, x + 16, y + 13, 0xFF35435A);
+                context.fill(x + 8, y + 5, x + 16, y + 13, ThemeColors.TRACK);
             }
             x += slotWidth;
         }
@@ -224,44 +237,24 @@ public class DercoVisualsClient implements ClientModInitializer {
 
     private static void drawKey(DrawContext context, MinecraftClient client,
                                 String label, int x, int y, int width, boolean pressed) {
-        int background = pressed ? 0xFF8A75E8 : PANEL;
+        int background = pressed ? ThemeColors.PRIMARY : ThemeColors.HUD_PANEL;
         context.fill(x, y, x + width, y + 18, background);
-        context.fill(x, y, x + width, y + 1, pressed ? AQUA : 0xFF394B68);
+        context.fill(x, y, x + width, y + 1, pressed ? ThemeColors.ACCENT : ThemeColors.BORDER_STRONG);
         int textWidth = client.textRenderer.getWidth(label);
         context.drawText(client.textRenderer, label,
-                x + (width - textWidth) / 2, y + 5, pressed ? 0xFF080D18 : WHITE, false);
+                x + (width - textWidth) / 2, y + 5,
+                pressed ? ThemeColors.TEXT_ON_ACCENT : ThemeColors.TEXT, false);
     }
 
     private static void drawHudCard(DrawContext context, MinecraftClient client,
                                     int x, int y, int width, int height,
                                     String label, String value, int accent) {
-        context.fill(x, y, x + width, y + height, PANEL);
+        context.fill(x, y, x + width, y + height, ThemeColors.HUD_PANEL);
         context.fill(x, y, x + 2, y + height, accent);
-        context.drawText(client.textRenderer, label, x + 8, y + 7, MUTED, false);
+        context.drawText(client.textRenderer, label, x + 8, y + 7,
+                ThemeColors.TEXT_SECONDARY, false);
         int valueWidth = client.textRenderer.getWidth(value);
         context.drawTextWithShadow(client.textRenderer, value,
-                x + width - valueWidth - 8, y + 7, WHITE);
-    }
-
-    private static String formatDuration(int ticks) {
-        if (ticks < 0) return "∞";
-        int seconds = ticks / 20;
-        return String.format("%d:%02d", seconds / 60, seconds % 60);
-    }
-
-    private static String romanAmplifier(int amplifier) {
-        return switch (amplifier) {
-            case 1 -> "I";
-            case 2 -> "II";
-            case 3 -> "III";
-            case 4 -> "IV";
-            case 5 -> "V";
-            default -> "" + amplifier;
-        };
-    }
-
-    private static String trim(String value, int max) {
-        if (value.length() <= max) return value;
-        return value.substring(0, Math.max(0, max - 1)) + "…";
+                x + width - valueWidth - 8, y + 7, ThemeColors.TEXT);
     }
 }

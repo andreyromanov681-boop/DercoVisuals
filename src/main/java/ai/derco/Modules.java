@@ -2,7 +2,10 @@ package ai.derco;
 
 import net.minecraft.client.MinecraftClient;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 public final class Modules {
     private Modules() {}
@@ -74,6 +77,20 @@ public final class Modules {
             FULLBRIGHT, ZOOM
     );
 
+    /** Category index built once: {@link #inCategory} used to allocate a stream per call. */
+    private static final Map<ModuleCategory, List<Module>> BY_CATEGORY =
+            new EnumMap<>(ModuleCategory.class);
+
+    static {
+        for (ModuleCategory category : ModuleCategory.values()) {
+            List<Module> modules = new ArrayList<>();
+            for (Module module : ALL) {
+                if (module.category == category) modules.add(module);
+            }
+            BY_CATEGORY.put(category, List.copyOf(modules));
+        }
+    }
+
     public static void loadConfig() {
         DercoConfig.load();
         if (FULLBRIGHT.isEnabled()) {
@@ -90,11 +107,23 @@ public final class Modules {
     }
 
     public static List<Module> inCategory(ModuleCategory category) {
-        return ALL.stream().filter(module -> module.category == category).toList();
+        return BY_CATEGORY.getOrDefault(category, List.of());
     }
 
     public static Module find(String id) {
-        return ALL.stream().filter(module -> module.id.equals(id)).findFirst().orElse(null);
+        if (id == null) return null;
+        for (Module module : ALL) {
+            if (module.id.equals(id)) return module;
+        }
+        return null;
+    }
+
+    public static int enabledCount() {
+        int count = 0;
+        for (Module module : ALL) {
+            if (module.isEnabled()) count++;
+        }
+        return count;
     }
 
     public static void updateZoom(MinecraftClient client, boolean keyHeld) {

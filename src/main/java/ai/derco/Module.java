@@ -26,9 +26,11 @@ public class Module {
         if (enabled == value) return;
         enabled = value;
         if (value) onEnable(); else onDisable();
-        DercoConfig.save();
+        // Deferred: DercoConfig coalesces writes instead of hitting the disk here.
+        DercoConfig.markDirty();
     }
 
+    /** Applies a value read from disk without triggering a save or a side effect. */
     public void loadEnabled(boolean value) {
         enabled = value;
     }
