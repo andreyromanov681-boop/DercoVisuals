@@ -859,25 +859,25 @@ patch_generated_java('ai/derco/mixin/EntityRendererHitboxMixin.java', (
     ('import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;',
      'import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;'),
     ('import ai.derco.module.ModuleRegistry;',
-     'import ai.derco.module.ModuleRegistry;\\nimport net.minecraft.client.render.Frustum;\\nimport net.minecraft.world.debug.DebugDataStore;'),
+     'import ai.derco.module.ModuleRegistry;\nimport net.minecraft.client.render.Frustum;\nimport net.minecraft.world.debug.DebugDataStore;'),
     ('@Mixin(targets = "net/minecraft/client/render/entity/EntityRenderDispatcher")',
      '@Mixin(targets = "net/minecraft/client/render/debug/EntityHitboxDebugRenderer")'),
-    ('   @Inject(method = "shouldRenderHitboxes", at = @At("HEAD"), cancellable = true)\\n'
-     '   private void suppressVanillaHitbox(CallbackInfoReturnable<Boolean> cir) {\\n'
-     '      if (ModuleRegistry.HITBOX_CUSTOMIZER != null && ModuleRegistry.HITBOX_CUSTOMIZER.k()) {\\n'
-     '         cir.setReturnValue(false);\\n'
-     '      }\\n'
+    ('   @Inject(method = "shouldRenderHitboxes", at = @At("HEAD"), cancellable = true)\n'
+     '   private void suppressVanillaHitbox(CallbackInfoReturnable<Boolean> cir) {\n'
+     '      if (ModuleRegistry.HITBOX_CUSTOMIZER != null && ModuleRegistry.HITBOX_CUSTOMIZER.k()) {\n'
+     '         cir.setReturnValue(false);\n'
+     '      }\n'
      '   }',
-     '   @Inject(\\n'
-     '      method = "render(DDDLnet/minecraft/world/debug/DebugDataStore;Lnet/minecraft/client/render/Frustum;F)V",\\n'
-     '      at = @At("HEAD"),\\n'
-     '      cancellable = true\\n'
-     '   )\\n'
-     '   private void suppressVanillaHitbox(double cameraX, double cameraY, double cameraZ, DebugDataStore store,\\n'
-     '         Frustum frustum, float tickProgress, CallbackInfo ci) {\\n'
-     '      if (ModuleRegistry.HITBOX_CUSTOMIZER != null && ModuleRegistry.HITBOX_CUSTOMIZER.k()) {\\n'
-     '         ci.cancel();\\n'
-     '      }\\n'
+     '   @Inject(\n'
+     '      method = "render(DDDLnet/minecraft/world/debug/DebugDataStore;Lnet/minecraft/client/render/Frustum;F)V",\n'
+     '      at = @At("HEAD"),\n'
+     '      cancellable = true\n'
+     '   )\n'
+     '   private void suppressVanillaHitbox(double cameraX, double cameraY, double cameraZ, DebugDataStore store,\n'
+     '         Frustum frustum, float tickProgress, CallbackInfo ci) {\n'
+     '      if (ModuleRegistry.HITBOX_CUSTOMIZER != null && ModuleRegistry.HITBOX_CUSTOMIZER.k()) {\n'
+     '         ci.cancel();\n'
+     '      }\n'
      '   }'),
 ))
 
