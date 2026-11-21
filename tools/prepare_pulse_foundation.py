@@ -600,7 +600,7 @@ metadata.update({
     'description': 'A free, modular, client-side visual suite for Minecraft 1.21.11.',
     'authors': ['enizer6569'], 'license': 'LicenseRef-DercoVisuals-Community',
     'environment': 'client',
-    'entrypoints': {'main': ['ai.derco.DercoVisuals']},
+    'entrypoints': {\n        'main': ['ai.derco.DercoVisuals'],\n        'preLaunch': ['ai.derco.crash.CrashLogBootstrap']\n    },
     'depends': {'fabricloader': '>=0.18.1', 'fabric': '*', 'minecraft': '~1.21.11', 'java': '>=21'}
 })
 metadata['jars'] = [{'file': f'META-INF/jars/{jar.name}'} for jar in sorted((UP / 'libs').glob('*.jar'))]
@@ -881,6 +881,248 @@ patch_generated_java('ai/derco/mixin/EntityRendererHitboxMixin.java', (
      '   }'),
 ))
 
+# Early crash snapshotter. Fabric invokes preLaunch immediately before starting the game,
+# before main/client entrypoints. It leaves a marker; CLIENT_STOPPING removes it on
+# a clean exit. A remaining marker means the previous process ended unexpectedly.
+crash_package = java_root / 'ai' / 'derco' / 'crash'
+crash_package.mkdir(parents=True, exist_ok=True)
+(crash_package / 'CrashLogBootstrap.java').write_text(r'''package ai.derco.crash;
+
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Properties;
+import java.util.regex.Pattern;
+
+public final class CrashLogBootstrap implements PreLaunchEntrypoint {
+    private static final String SETTINGS_FILE = "dercovisuals-crash-upload.properties";
+    private static final String ACTIVE_MARKER = "dercovisuals-session-active";
+    private static final String QUEUE_DIR = "dercovisuals-crash-queue";
+    private static final String RESULT_FILE = "dercovisuals-last-crash-paste.txt";
+    private static final long MAX_LOG_BYTES = 2L * 1024L * 1024L;
+    private static final String API_URL = "https://pastebin.com/api/api_post.php";
+
+    @Override
+    public void onPreLaunch() {
+        Path configDir = FabricLoader.getInstance().getConfigDir();
+        Path marker = configDir.resolve(ACTIVE_MARKER);
+        try {
+            Files.createDirectories(configDir);
+            Path queue = configDir.resolve(QUEUE_DIR);
+            Files.createDirectories(queue);
+            ensureSettingsFile(configDir.resolve(SETTINGS_FILE));
+
+            if (Files.exists(marker)) {
+                snapshotLatestLog(queue);
+                System.out.println("[DercoVisuals] Previous session ended unexpectedly; checking crash-log upload settings.");
+            }
+
+            Settings settings = loadSettings(configDir.resolve(SETTINGS_FILE));
+            if (settings.enabled() && !settings.apiDevKey().isBlank()) {
+                startUploader(configDir, queue, settings.apiDevKey());
+            } else if (settings.enabled()) {
+                System.out.println("[DercoVisuals] Crash upload is enabled but apiDevKey is empty. Configure " +
+                    configDir.resolve(SETTINGS_FILE) + " to enable Pastebin uploads.");
+            }
+
+            Files.writeString(marker, Long.toString(System.currentTimeMillis()), StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    if (Files.exists(marker)) {
+                        snapshotLatestLog(queue);
+                    }
+                } catch (Exception exception) {
+                    System.err.println("[DercoVisuals] Could not snapshot crash log during shutdown: " + exception.getMessage());
+                }
+            }, "DercoVisuals-CrashLogSnapshot"));
+        } catch (Exception exception) {
+            System.err.println("[DercoVisuals] Crash-log watcher could not initialize: " + exception.getMessage());
+        }
+    }
+
+    public static void markCleanShutdown() {
+        try {
+            Path marker = FabricLoader.getInstance().getConfigDir().resolve(ACTIVE_MARKER);
+            Files.deleteIfExists(marker);
+        } catch (IOException exception) {
+            System.err.println("[DercoVisuals] Could not clear session marker: " + exception.getMessage());
+        }
+    }
+
+    private static void ensureSettingsFile(Path settingsFile) throws IOException {
+        if (Files.exists(settingsFile)) return;
+        String template = "# DercoVisuals crash-log upload settings\n" +
+            "# Upload is attempted only after an unexpected previous-session exit.\n" +
+            "# Pastebin links are UNLISTED (anyone with the link can view them) and expire after one week.\n" +
+            "# Add your own Pastebin Developer API key below. Never commit this file.\n" +
+            "enabled=true\n" +
+            "apiDevKey=\n";
+        Files.writeString(settingsFile, template, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
+    }
+
+    private static Settings loadSettings(Path settingsFile) throws IOException {
+        Properties properties = new Properties();
+        try (var reader = Files.newBufferedReader(settingsFile, StandardCharsets.UTF_8)) {
+            properties.load(reader);
+        }
+        boolean enabled = Boolean.parseBoolean(properties.getProperty("enabled", "true").trim());
+        String apiDevKey = properties.getProperty("apiDevKey", "").trim();
+        return new Settings(enabled, apiDevKey);
+    }
+
+    private static void snapshotLatestLog(Path queue) throws IOException {
+        Path latestLog = FabricLoader.getInstance().getGameDir().resolve("logs").resolve("latest.log");
+        if (!Files.isRegularFile(latestLog)) return;
+
+        Path snapshot = queue.resolve("crash-" + System.currentTimeMillis() + ".log");
+        try (RandomAccessFile input = new RandomAccessFile(latestLog.toFile(), "r")) {
+            long length = input.length();
+            if (length <= 0L) return;
+            long start = Math.max(0L, length - MAX_LOG_BYTES);
+            int byteCount = (int) (length - start);
+            byte[] bytes = new byte[byteCount];
+            input.seek(start);
+            input.readFully(bytes);
+
+            String log = new String(bytes, StandardCharsets.UTF_8);
+            if (start > 0L) log = "[DercoVisuals] Log truncated to last 2 MiB.\n" + log;
+            log = redactSensitiveValues(log);
+            Files.writeString(snapshot, log, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
+        }
+
+        trimQueue(queue, 5);
+    }
+
+    private static String redactSensitiveValues(String log) {
+        String home = System.getProperty("user.home", "");
+        if (home != null && !home.isBlank()) log = log.replace(home, "<USER_HOME>");
+        String user = System.getProperty("user.name", "");
+        if (user != null && user.length() >= 3) log = log.replace(user, "<USER>");
+
+        log = log.replaceAll("(?i)(authorization\\s*[:=]\\s*bearer\\s+)[^\\s]+", "$1<redacted>");
+        log = log.replaceAll(
+            "(?i)((?:access|refresh|session|auth|api)[_-]?(?:token|key)|password|secret)(\\s*[=:]\\s*)([^\\s,;\"']+)",
+            "$1$2<redacted>"
+        );
+        return log;
+    }
+
+    private static void trimQueue(Path queue, int maximumFiles) throws IOException {
+        List<Path> files = listQueuedFiles(queue);
+        int excess = files.size() - maximumFiles;
+        for (int index = 0; index < excess; index++) {
+            Files.deleteIfExists(files.get(index));
+        }
+    }
+
+    private static List<Path> listQueuedFiles(Path queue) throws IOException {
+        List<Path> files = new ArrayList<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(queue, "crash-*.log")) {
+            for (Path file : stream) files.add(file);
+        }
+        files.sort(Comparator.comparing(path -> path.getFileName().toString()));
+        return files;
+    }
+
+    private static void startUploader(Path configDir, Path queue, String apiDevKey) {
+        Thread uploader = new Thread(() -> {
+            try {
+                for (Path pendingLog : listQueuedFiles(queue)) {
+                    String pasteUrl = uploadToPastebin(pendingLog, apiDevKey);
+                    Files.writeString(configDir.resolve(RESULT_FILE), pasteUrl + System.lineSeparator(),
+                        StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                    Files.deleteIfExists(pendingLog);
+                    System.out.println("[DercoVisuals] Previous crash log uploaded to Pastebin: " + pasteUrl);
+                }
+            } catch (Exception exception) {
+                System.err.println("[DercoVisuals] Pastebin upload failed; the log is kept for retry: " +
+                    exception.getMessage());
+            }
+        }, "DercoVisuals-PastebinCrashUploader");
+        uploader.setDaemon(true);
+        uploader.start();
+    }
+
+    private static String uploadToPastebin(Path logFile, String apiDevKey) throws IOException {
+        String pasteCode = Files.readString(logFile, StandardCharsets.UTF_8);
+        String title = "DercoVisuals crash log " + Instant.now();
+        String form = "api_option=paste" +
+            "&api_dev_key=" + encode(apiDevKey) +
+            "&api_paste_code=" + encode(pasteCode) +
+            "&api_paste_private=1" +
+            "&api_paste_name=" + encode(title) +
+            "&api_paste_expire_date=1W" +
+            "&api_paste_format=text";
+
+        byte[] body = form.getBytes(StandardCharsets.UTF_8);
+        HttpURLConnection connection = (HttpURLConnection) new URL(API_URL).openConnection();
+        try {
+            connection.setRequestMethod("POST");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(15000);
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            connection.setFixedLengthStreamingMode(body.length);
+            try (OutputStream output = connection.getOutputStream()) {
+                output.write(body);
+            }
+
+            int status = connection.getResponseCode();
+            var responseStream = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
+            String response;
+            if (responseStream == null) {
+                response = "";
+            } else {
+                try (responseStream) {
+                    response = new String(responseStream.readNBytes(4096), StandardCharsets.UTF_8).trim();
+                }
+            }
+
+            if (status != 200 || !response.startsWith("https://pastebin.com/")) {
+                throw new IOException("Pastebin returned HTTP " + status + ": " +
+                    response.replace('\n', ' ').replace('\r', ' '));
+            }
+            return response;
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private record Settings(boolean enabled, String apiDevKey) { }
+}
+''', encoding='utf-8')
+
+# Mark sessions clean only when the client reaches its normal stopping callback.
+patch_generated_java('ai/derco/DercoVisuals.java', (
+    ('import ai.derco.auth.UserInfo;', 'import ai.derco.auth.UserInfo;\nimport ai.derco.crash.CrashLogBootstrap;'),
+    ('ClientLifecycleEvents.CLIENT_STOPPING.register(client -> LocalConfigManager.get().flushSaveNow("client-stop"));',
+     'ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {\n'
+     '            LocalConfigManager.get().flushSaveNow("client-stop");\n'
+     '            CrashLogBootstrap.markCleanShutdown();\n'
+     '        });'),
+))
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.
@@ -891,6 +1133,10 @@ for json_path in sorted((SRC / 'resources').rglob('*.json')):
         raise SystemExit(f'Invalid generated JSON resource {json_path.relative_to(ROOT)}: {exc}')
 
 generated_metadata = json.loads(meta.read_text(encoding='utf-8'))
+if 'ai.derco.crash.CrashLogBootstrap' not in generated_metadata.get('entrypoints', {}).get('preLaunch', []):
+    raise SystemExit('CrashLogBootstrap preLaunch entrypoint is missing')
+if not (java_root / 'ai' / 'derco' / 'crash' / 'CrashLogBootstrap.java').is_file():
+    raise SystemExit('CrashLogBootstrap source was not generated')
 if generated_metadata.get('version') != chr(36) + '{version}':
     raise SystemExit('fabric.mod.json version placeholder must be present for Gradle resource expansion')
 icon_path = generated_metadata.get('icon')
