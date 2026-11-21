@@ -292,8 +292,9 @@ font_manager_path.write_text(font_manager_source, encoding='utf-8')
 # The original decompiled FontManager still asked for the old Pulse filenames, causing
 # Font.createFont(null) to throw IOException during class initialization on game startup.
 patch_generated_java('ai/derco/render/font/FontManager.java', (
-    ('load(i4, "dercoicon.ttf")', 'load(i4, "dercovisualsicon.ttf")'),
-    ('load(i5, "derco_icons.ttf")', 'load(i5, "dercovisuals_icons.ttf")'),
+    ('"/assets/pulse/font/"', '"/assets/dercovisuals/font/"'),
+    ('load(i4, "pulseicon.ttf")', 'load(i4, "dercovisualsicon.ttf")'),
+    ('load(i5, "pulse_icons.ttf")', 'load(i5, "dercovisuals_icons.ttf")'),
     ('throw new RuntimeException(e2);',
      'System.err.println("[DercoVisuals] Could not load font resource " + str + ": " + e2.getMessage() + "; using SansSerif fallback.");\n'
      '         Font fallbackFont = new Font(Font.SANS_SERIF, Font.PLAIN, 1).deriveFont(Font.PLAIN, f / 2.0F);\n'
