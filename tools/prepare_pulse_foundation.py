@@ -566,6 +566,7 @@ metadata = json.loads(meta.read_text(encoding='utf-8'))
 metadata.update({
     'id': 'dercovisuals', 'name': 'DercoVisuals',
     'version': '${version}',
+    'icon': 'assets/dercovisuals/textures/logo.png',
     'description': 'A free, modular, client-side visual suite for Minecraft 1.21.11.',
     'authors': ['enizer6569'], 'license': 'LicenseRef-DercoVisuals-Community',
     'environment': 'client',
@@ -802,6 +803,9 @@ for json_path in sorted((SRC / 'resources').rglob('*.json')):
 generated_metadata = json.loads(meta.read_text(encoding='utf-8'))
 if generated_metadata.get('version') != chr(36) + '{version}':
     raise SystemExit('fabric.mod.json version placeholder must be present for Gradle resource expansion')
+icon_path = generated_metadata.get('icon')
+if not icon_path or not (SRC / 'resources' / icon_path).is_file():
+    raise SystemExit(f'fabric.mod.json icon resource is missing: {icon_path}')
 generated_mixin_config = json.loads(mixin_config_path.read_text(encoding='utf-8'))
 mixin_source_root = java_root / 'ai' / 'derco' / 'mixin'
 for mixin_name in (*generated_mixin_config.get('mixins', []), *generated_mixin_config.get('client', [])):
