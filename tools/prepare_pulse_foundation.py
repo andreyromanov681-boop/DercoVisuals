@@ -301,6 +301,95 @@ patch_generated_java('ai/derco/render/font/FontManager.java', (
      '         return new FontRenderer(fallbackFont, f / 2.0F);'),
 ))
 
+# Avoid parsing the same embedded TTF once per requested UI size.
+# Java Font objects are immutable; deriving each size from one shared base Font keeps
+# the existing public arrays/API while reusing the parsed font face.
+font_manager_path.write_text(r'''package ai.derco.render.font;
+
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.io.IOException;
+import java.io.InputStream;
+
+public final class FontManager {
+   public static final FontRenderer[] REGULAR = new FontRenderer[65];
+   public static final FontRenderer[] MEDIUM = new FontRenderer[65];
+   public static final FontRenderer[] ICONS = new FontRenderer[65];
+   public static final FontRenderer[] PULSE_ICONS = new FontRenderer[265];
+   public static final FontRenderer[] SMALL_ICONS = new FontRenderer[65];
+   public static final FontRenderer[] a;
+   public static final FontRenderer[] b;
+   public static final FontRenderer[] c;
+   public static final FontRenderer[] d;
+   public static final FontRenderer[] e;
+
+   private static Font loadBase(String name) {
+      String path = "/assets/dercovisuals/font/" + name;
+      try (InputStream input = FontManager.class.getResourceAsStream(path)) {
+         if (input == null) {
+            throw new IOException("Missing font resource: " + path);
+         }
+         return Font.createFont(Font.TRUETYPE_FONT, input);
+      } catch (IOException | FontFormatException failure) {
+         System.err.println("[DercoVisuals] Could not load font resource " + name
+            + ": " + failure.getMessage() + "; using SansSerif fallback.");
+         return new Font(Font.SANS_SERIF, Font.PLAIN, 1);
+      }
+   }
+
+   private static void fill(FontRenderer[] renderers, Font baseFont, int firstSize, int endSizeExclusive) {
+      for (int size = firstSize; size < endSizeExclusive; size++) {
+         renderers[size] = new FontRenderer(baseFont, size / 2.0F);
+      }
+   }
+
+   static {
+      Font regular = loadBase("sfprodisplayregular.ttf");
+      Font medium = loadBase("sfprodisplay-medium-test.ttf");
+      Font icons = loadBase("icons.ttf");
+      Font visualIcons = loadBase("dercovisualsicon.ttf");
+      Font smallIcons = loadBase("dercovisuals_icons.ttf");
+
+      fill(REGULAR, regular, 6, 65);
+      fill(MEDIUM, medium, 6, 65);
+      fill(ICONS, icons, 6, 65);
+      fill(PULSE_ICONS, visualIcons, 6, 265);
+      fill(SMALL_ICONS, smallIcons, 6, 65);
+
+      a = REGULAR;
+      b = MEDIUM;
+      c = ICONS;
+      d = PULSE_ICONS;
+      e = SMALL_ICONS;
+   }
+
+   private FontManager() {
+   }
+}
+''', encoding='utf-8')
+
+# The draw path used to allocate a fresh Matrix4f for every string, but the batch
+# methods never read that value; DrawContext already owns the active transform.
+patch_generated_java('ai/derco/render/font/FontRenderer.java', (
+    ('Matrix4f matrix4fGetPositionMatrix = this.getMatrix(MatrixStackVar);',
+     'Matrix4f matrix4fGetPositionMatrix = null;'),
+    ('char[] charArray = str.toCharArray();', 'int charLength = str.length();'),
+    ('charArray.length', 'charLength'),
+    ('charArray[i3]', 'str.charAt(i3)'),
+    ('charArray[i4]', 'str.charAt(i4)'),
+))
+
+# Cache one fallback face per glyph atlas instead of allocating a new AWT Font for
+# every unsupported character in a 256-codepoint page.
+patch_generated_java('ai/derco/render/font/FontGlyphAtlas.java', (
+    ('private final Font baseFont;',
+     'private final Font baseFont;\\n   private final Font fallbackFont;'),
+    ('this.baseFont = font;\\n      this.a = IdentifierVar;',
+     'this.baseFont = font;\\n      this.fallbackFont = new Font(Font.SANS_SERIF, Font.PLAIN, Math.max(1, font.getSize()));\\n      this.a = IdentifierVar;'),
+    ('return this.baseFont.canDisplay(c) ? this.baseFont : new Font("SansSerif", 0, this.baseFont.getSize());',
+     'return this.baseFont.canDisplay(c) ? this.baseFont : this.fallbackFont;'),
+))
+
 # Restore collection element types lost by the upstream decompiler.
 patch_generated_java('ai/derco/discord/CosmeticHelper.java', (
     ('Map var7 = CosmeticRepository.a().b();',
