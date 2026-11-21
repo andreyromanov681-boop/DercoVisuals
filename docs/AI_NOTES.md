@@ -300,3 +300,12 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Corrected the generated guard to call getClass() through an Object cast: ((Object)this).getClass() != TitleScreen.class. This keeps exact-class matching (so subclasses such as DercoVisualsMainMenuScreen are skipped) and is valid Java for a Mixin class.
 - Generator correction committed as 2df58751ac446f249e913b6a93f9944a17710a0d.
 - Build for this corrected commit is pending. Do not distribute a new JAR until CI compile, remap, JAR verification, and artifact upload pass.
+
+
+## 2026-11-21 — Main-menu recursion guard build verified
+
+- GitHub Actions run #44953297551 completed successfully for the corrected generator revision; source generation, Java 21 compile/build, remap, JAR texture/metadata verification, and artifact upload all passed.
+- Downloaded the CI artifact and extracted DercoVisuals-1.0.0.jar (16,629,670 bytes). ZIP integrity check passed. SHA-256: fbbece975101eb09e9995cb85a1ad19bc5bff9436af767ad0de22e7aeb816a43.
+- Inspected the packaged TitleScreenMixin bytecode: the init hook now returns unless the runtime screen class is the exact vanilla TitleScreen class, preventing the custom DercoVisualsMainMenuScreen from re-entering the automatic replacement path.
+- The crash reports supplied by the maintainer show the recursive constructor failure addressed by this guard. An in-game launch smoke test on the maintainer's client remains outstanding; successful CI compilation and static JAR checks do not prove runtime behavior on every modpack.
+- Published CI artifact for maintainer testing: run #44953297551. `main` and `pulse-src.zip` remain untouched.
