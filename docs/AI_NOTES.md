@@ -203,3 +203,6 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Pre-commit validation: applied all four guarded source replacements to the latest generated-source artifact; each old anchor matched exactly once and the resulting Java source uses the current class, exact method descriptor, and `CallbackInfo` cancellation. Yarn API documentation confirms the target class and method.
 - CI/build and remapped JAR verification are pending for this source-generator change. No Minecraft client runtime test is available here. The original `pulse-src.zip`, `main`, and other branches were not modified.
 - Next: verify CI source generation/compile, inspect the remapped mixin annotation in the actual JAR, and confirm the missing-target warning is gone.
+
+
+- Follow-up correction (2026-11-21): inspection of the committed generator caught over-escaped newline tokens in the newly added hitbox source replacement strings. Corrected the Python literals so they match actual Java source line breaks; the initial in-memory source transformation had been checked, but the serialized generator representation also needed this fix. The replacement CI run is authoritative.
