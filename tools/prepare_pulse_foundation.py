@@ -634,13 +634,13 @@ title_screen_mixin_path = java_root / 'ai/derco/mixin/TitleScreenMixin.java'
 title_screen_mixin_source = title_screen_mixin_path.read_text(encoding='utf-8', errors='replace')
 if 'DercoVisualsMainMenuScreen' not in title_screen_mixin_source:
     raise SystemExit('Expected custom main-menu reference was not found in TitleScreenMixin.java')
-head_init_pattern = re.compile(r'(\\bvoid\\s+onInitHead\\s*\\([^)]*\\)\\s*\\{)')
+head_init_pattern = re.compile(r'(\bvoid\s+onInitHead\s*\([^)]*\)\s*\{)')
 if len(head_init_pattern.findall(title_screen_mixin_source)) != 1:
     raise SystemExit('Expected exactly one onInitHead injection in TitleScreenMixin.java')
 main_menu_guard = 'if (this.getClass() != net.minecraft.client.gui.screen.TitleScreen.class) return;'
 if main_menu_guard not in title_screen_mixin_source:
     title_screen_mixin_source, guard_count = head_init_pattern.subn(
-        lambda match: match.group(1) + '\\n      ' + main_menu_guard,
+        lambda match: match.group(1) + '\n      ' + main_menu_guard,
         title_screen_mixin_source,
         count=1,
     )
