@@ -261,3 +261,23 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - PR #2 is merged. PRs #3, #4, and #5 were closed as integrated after comments linking this commit and the successful combined CI run. `main` and `pulse-src.zip` were not modified.
 - No Minecraft runtime screenshot or in-game smoke test was performed for the combined redesign. The supplied HUD mockup remains a concept reference; Right Shift, GUI scale, drag/resize, saved layouts, and live HUD placement still need manual testing.
 - The performance-memory agent branch had no commits or PR at integration time, so memory/performance changes remain pending until that agent submits work.
+
+## 2026-11-21 — Independent performance audit and shared theme hookup
+
+- Assistant/tool: ChatGPT GPT-6 using the connected GitHub integration and CI artifacts.
+- Performance work was completed directly on pulse-foundation; the separate agent/performance-memory branch still had no commits and no PR.
+- Source-of-truth edits were made only in tools/prepare_pulse_foundation.py. pulse-src.zip, main, generated build outputs and other branches were not modified.
+- Font loading: replaced repeated Font.createFont calls for every requested size with five base-font parses (one per embedded font file) and derived immutable font sizes from those base faces. Preserved the five public FontRenderer arrays, aliases and their existing indexes/ranges.
+- Text rendering: removed an unused per-draw Matrix4f allocation and repeated String.toCharArray copies from the FontRenderer hot path; character access now uses String.charAt. Added one cached SansSerif fallback per glyph atlas instead of allocating fallback Font objects for unsupported glyphs.
+- Optional WMedia integration: if the external provider is not available at startup, the polling worker now exits instead of waking every 8 ms indefinitely. Reused a shared zero-level array and one six-float scratch buffer for audio visualisation when the provider is available.
+- Sound playback: replaced a new daemon thread per sound event with one reusable daemon worker and a bounded queue of 12 pending sounds. Under overload, the oldest pending sound is discarded instead of allowing thread/queue growth.
+- Shared design integration: the legacy GUI Theme color aliases and HUD HudTheme palette now resolve accent, surfaces, borders and text colors from DercoTheme / ThemeColors. Existing public GUI color fields and HUD color fields remain available to callers.
+- Validation:
+  - CI run #98 (https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44922111083) passed the font and WMedia optimization generation, Java compile/build, remap and PNG verifier.
+  - CI run #100 (https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44922416450) passed the bounded audio-worker implementation and full build/resource checks.
+  - CI run #101 (https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44922736571) passed after the shared GUI/HUD theme integration. All generation, compile/build, remap, resource verification and artifact upload steps succeeded.
+  - Final runtime artifact: DercoVisuals-1.0.0.jar, 16,629,625 bytes, SHA-256 9eace6d241f8bbc6f691707eec61c3158008c42d9f75bccf3b6b9f38c8f7e46f. It contains 113 PNG files; all six legacy texture paths, the 42 generated images, the font resources, SoundPlayer, MediaSessionService, FontManager, FontRenderer, FontGlyphAtlas, GUI Theme, HUD HudTheme and shared theme classes are present. The CI texture verifier passed.
+  - A separate Java 21 headless smoke test initialized DercoTheme, the GUI Theme class and HudTheme; Theme.C and HudTheme.ACCENT matched DercoTheme default accent 0xFF347BFA.
+- No in-game Minecraft client benchmark or runtime smoke test was performed, and no FPS/RAM percentage improvement is claimed. The optimizations are grounded in source-level allocation/thread audit, not a measured performance profile.
+- The user's Windows laptop log still showed a native memory commit failure while using -Xmx7040m and -XX:+AlwaysPreTouch with only about 5.5 GiB available at launch. The recommended local launcher settings remain -Xmx4096m and removing -XX:+AlwaysPreTouch plus custom ZGC flags; source optimizations do not replace adequate OS commit/page-file headroom.
+- pulse-foundation now includes the shared electric-blue palette and these source-level performance changes. main and pulse-src.zip remain untouched.
