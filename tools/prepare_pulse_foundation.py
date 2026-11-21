@@ -295,8 +295,8 @@ patch_generated_java('ai/derco/render/font/FontManager.java', (
     ('load(i4, "dercoicon.ttf")', 'load(i4, "dercovisualsicon.ttf")'),
     ('load(i5, "derco_icons.ttf")', 'load(i5, "dercovisuals_icons.ttf")'),
     ('throw new RuntimeException(e2);',
-     'System.err.println("[DercoVisuals] Could not load font resource " + str + ": " + e2.getMessage() + "; using SansSerif fallback.");\\n'
-     '         Font fallbackFont = new Font(Font.SANS_SERIF, Font.PLAIN, 1).deriveFont(Font.PLAIN, f / 2.0F);\\n'
+     'System.err.println("[DercoVisuals] Could not load font resource " + str + ": " + e2.getMessage() + "; using SansSerif fallback.");\n'
+     '         Font fallbackFont = new Font(Font.SANS_SERIF, Font.PLAIN, 1).deriveFont(Font.PLAIN, f / 2.0F);\n'
      '         return new FontRenderer(fallbackFont, f / 2.0F);'),
 ))
 
