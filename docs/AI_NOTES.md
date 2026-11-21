@@ -181,3 +181,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Validation before commit: applied the exact patch anchors to the current CI-generated source artifact; verified both anchors match exactly once, the existing imports are present, and the setting is collected by the module constructor. The current baseline CI run [#54](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44903107708) passed under Java 21 / Gradle 9.2.1. The new commit's CI result is pending.
 - Limitations: this environment cannot launch the Minecraft client for an in-game GUI/persistence smoke test. The repository currently has no Java test sources (`test` is `NO-SOURCE`).
 - Next: verify the new setting in the in-game Potions HUD settings panel, confirm its value persists after restart, and continue with the next independent visual improvement.
+
+
+## 2026-11-21 — Fix InGameHud scoreboard overload injection
+
+- Assistant/tool: ChatGPT bug-fix session using the user's third Fabric 1.21.11 crash log.
+- The client now passed both earlier `DrawContextMixin` injection points and reached HUD initialization. The new failure was `InGameHudMixin.onRenderScoreboardSidebar`: the handler takes `(DrawContext, ScoreboardObjective, CallbackInfo)`, while Mixin selected the other same-name overload `renderScoreboardSidebar(DrawContext, RenderTickCounter)` and expected `(DrawContext, RenderTickCounter, CallbackInfo)`.
+- Confirmed Yarn `1.21.11+build.3` exposes both overloads separately: the outer dispatcher maps to intermediary `method_55803(DrawContext, RenderTickCounter)`; the inner renderer maps to `method_1757(DrawContext, ScoreboardObjective)`.
+- Fixed the source-of-truth generator `tools/prepare_pulse_foundation.py` to give both HEAD and TAIL injections the full named descriptor `renderScoreboardSidebar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/scoreboard/ScoreboardObjective;)V`. This keeps the existing scoreboard objective calculations and matrix push/pop behavior attached to the inner renderer, rather than rewriting the feature.
+- The previous `pulse-foundation` changes were preserved, including the configurable potion-HUD effect limit and both DrawContext overload fixes. The original `pulse-src.zip` remains untouched.
+- CI/build and remapped-JAR bytecode inspection for this commit are pending. A successful build does not prove in-game runtime behavior; the user's next launch will confirm whether another Mixin error remains.
+- Next: inspect CI and verify both scoreboard injections remap to `method_1757(Lnet/minecraft/class_332;Lnet/minecraft/class_266;)V`, then send the rebuilt JAR.
