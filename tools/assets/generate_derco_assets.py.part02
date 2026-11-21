@@ -1,0 +1,43 @@
+       for pts,c in [([(28,43),(28,28),(43,28)],CYAN), ([(85,28),(100,28),(100,43)],BLUE), ([(28,85),(28,100),(43,100)],BLUE), ([(85,100),(100,100),(100,85)],CYAN)]: ln(d,pts,c,5)
+        ln(d,[(64,42),(64,58)],PALE,3); ln(d,[(64,70),(64,87)],CYAN,3); ln(d,[(42,64),(58,64)],BLUE,3); ln(d,[(70,64),(87,64)],BLUE,3)
+    elif name=='hitbox': ln(d,[(39,34),(82,34),(101,50),(59,50),(39,34)],CYAN,3); ln(d,[(39,34),(39,83),(59,100),(59,50)],BLUE,4); ln(d,[(59,100),(101,83),(101,50)],CYAN,3); ln(d,[(82,34),(82,83)],BLUE,3)
+    elif name=='zoom': ellipse(d,(22,22,83,83),CYAN,6); ln(d,[(74,74),(106,106)],BLUE,8); ln(d,[(38,52),(68,52)],PALE,3)
+    elif name=='sprint': ln(d,[(24,86),(47,68),(70,54),(101,34)],CYAN,6); poly(d,[(88,27),(109,28),(100,48)],None,0,rgba(PALE))
+    elif name=='elytra': ln(d,[(64,30),(64,98)],PALE,4); ln(d,[(64,41),(37,27),(24,44),(43,88),(64,75),(85,88),(104,44),(91,27),(64,41)],CYAN,4)
+    elif name=='sound': poly(d,[(27,53),(43,53),(60,38),(60,90),(43,75),(27,75)],CYAN,4); [d.arc((q(48-r),q(64-r),q(48+r),q(64+r)),305,55,fill=rgba(BLUE),width=q(3)) for r in (18,31,43)]
+    elif name=='inventory_sort':
+        for x,y in ((30,30),(68,30),(30,68),(68,68)): rr(d,(x,y,x+29,y+29),4,CYAN if x==30 else BLUE,3)
+        ln(d,[(43,44),(54,44)],PALE,3); ln(d,[(43,82),(54,82)],PALE,3)
+
+def icon(name,path):
+    im=canvas(128); d=ImageDraw.Draw(im)
+    rr(d,(8,8,120,120),24,(35,94,153),2)
+    d.arc((q(13),q(13),q(115),q(115)),195,290,fill=rgba(CYAN,150),width=q(2))
+    for x,y in ((22,22),(106,22),(22,106),(106,106)): ellipse(d,(x-2,y-2,x+2,y+2),None,0,rgba(BLUE,210))
+    layer=canvas(128); glyph(name,ImageDraw.Draw(layer)); alpha=layer.getchannel('A').filter(ImageFilter.GaussianBlur(q(4))); halo=Image.new('RGBA',layer.size,rgba(BLUE,85)); halo.putalpha(alpha.point(lambda a:a*85//255)); im.alpha_composite(halo); im.alpha_composite(layer)
+    save(im,path)
+
+sets={
+'categories':['visuals','hud','utilities','combat','movement','render','player','world','misc'],
+'hud':['armor','bossbar','cooldowns','effects','hotkeys','inventory','potions','saturation','scoreboard','target','totems','watermark','tnt_timer'],
+'modules':['crosshair','fullbright','trails','particles','hitbox','jump_circles','zoom','sprint','elytra','world','sound','inventory_sort']}
+for group,names in sets.items():
+    for name in names:
+        variant = 'module_world' if group=='modules' and name=='world' else ('hud_target' if group=='hud' and name=='target' else name)
+        icon(variant,OUT/'textures'/group/(name+'.png'))
+
+# Selected-module header artwork and inspector accent are intentionally different assets.
+im=canvas(310,65); d=ImageDraw.Draw(im); rr(d,(1,1,309,64),10,(35,117,195),2); rr(d,(8,8,12,57),2,CYAN,0,rgba(CYAN,210))
+for i in range(5): ln(d,[(255+i*10,13),(275+i*10,13)],BLUE,1); ellipse(d,(260+i*10,28,264+i*10,32),None,0,rgba(CYAN,135))
+ln(d,[(18,52),(125,52)],BLUE,2); ln(d,[(18,52),(58,52)],CYAN,2); save(im,OUT/'textures/panels/selected_module.png')
+im=canvas(256,64); d=ImageDraw.Draw(im); rr(d,(1,1,255,63),9,(34,113,192),2); ln(d,[(16,48),(36,28),(56,48),(76,28)],CYAN,2); rr(d,(102,22,226,26),2,BLUE,0,rgba(BLUE,120)); rr(d,(102,34,192,38),2,CYAN,0,rgba(CYAN,100)); save(im,OUT/'textures/panels/detail_accent.png')
+
+manifest={
+ 'brand':['textures/icon.png','textures/ai.derco.png','textures/derco_logo.png','textures/clickgui/derco_water.png','textures/clickgui/derco_ico.png','textures/account_modal.png'],
+ 'categories':[f'textures/categories/{x}.png' for x in sets['categories']],
+ 'hud':[f'textures/hud/{x}.png' for x in sets['hud']],
+ 'modules':[f'textures/modules/{x}.png' for x in sets['modules']],
+ 'panels':['textures/panels/selected_module.png','textures/panels/detail_accent.png']}
+(OUT/'asset-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
+print('Created',len(list((OUT/'textures').rglob('*.png'))),'PNG assets under',OUT)
+

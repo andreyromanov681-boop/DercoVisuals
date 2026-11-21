@@ -1,0 +1,92 @@
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+import json, math
+
+OUT = Path(__file__).resolve().parent / 'png'
+S = 4
+BLUE, CYAN, PALE = (36,118,255), (42,226,255), (202,244,255)
+NAVY, MID = (7,18,39), (12,32,62)
+for sub in ('clickgui','categories','hud','modules','panels'):
+    (OUT/'textures'/sub).mkdir(parents=True, exist_ok=True)
+
+def q(v): return int(round(v*S))
+def rgba(c,a=255): return (*c,a)
+def canvas(w,h=None,bg=(0,0,0,0)):
+    h = w if h is None else h
+    return Image.new('RGBA',(w*S,h*S),bg)
+def ln(d,pts,c=CYAN,w=3):
+    p=[(q(x),q(y)) for x,y in pts]; d.line(p,fill=rgba(c),width=q(w),joint='curve')
+    r=w/2
+    for x,y in (pts[0],pts[-1]): d.ellipse((q(x-r),q(y-r),q(x+r),q(y+r)),fill=rgba(c))
+def rr(d,box,r=5,c=CYAN,w=2,fill=None): d.rounded_rectangle(tuple(q(x) for x in box),radius=q(r),outline=rgba(c) if c else None,width=q(w),fill=fill)
+def ellipse(d,box,c=CYAN,w=2,fill=None): d.ellipse(tuple(q(x) for x in box),outline=rgba(c) if c else None,width=q(w),fill=fill)
+def poly(d,pts,c=CYAN,w=2,fill=None): d.polygon([(q(x),q(y)) for x,y in pts],outline=rgba(c) if c else None,fill=fill,width=q(w))
+def save(im,path):
+    im=im.resize((im.width//S,im.height//S),Image.Resampling.LANCZOS)
+    im.save(path,format='PNG',optimize=True)
+def mark(size=128,alpha=255):
+    im=canvas(size,size); d=ImageDraw.Draw(im); c=size/2
+    glyph=canvas(size,size); g=ImageDraw.Draw(glyph)
+    pts=[(c-size*.19,c-size*.25),(c+size*.02,c-size*.25),(c+size*.20,c-size*.12),(c+size*.24,c),(c+size*.20,c+size*.13),(c+size*.02,c+size*.25),(c-size*.19,c+size*.25)]
+    ln(g,pts,BLUE,size*.038); ln(g,[(c-size*.19,c-size*.25),(c-size*.19,c+size*.25)],CYAN,size*.038)
+    ln(g,[(c-size*.04,c-size*.11),(c+size*.10,c),(c-size*.04,c+size*.11)],PALE,size*.025)
+    glow=glyph.getchannel('A').filter(ImageFilter.GaussianBlur(q(size*.025)));
+    halo=Image.new('RGBA',im.size,rgba(BLUE,130)); halo.putalpha(glow.point(lambda a:a*130//255)); im.alpha_composite(halo); im.alpha_composite(glyph)
+    d=ImageDraw.Draw(im); ellipse(d,(c+size*.20,c-size*.29,c+size*.25,c-size*.24),None,0,rgba(CYAN))
+    if alpha!=255: im.putalpha(im.getchannel('A').point(lambda a:a*alpha//255))
+    return im
+
+def app_icon():
+    im=canvas(256,256); px=im.load()
+    for y in range(256*S):
+        t=y/(256*S-1); col=tuple(round(a*(1-t)+b*t) for a,b in zip((10,29,58),(5,13,31)))+(255,)
+        for x in range(256*S): px[x,y]=col
+    mask=Image.new('L',im.size,0); ImageDraw.Draw(mask).rounded_rectangle((0,0,im.width-1,im.height-1),radius=q(38),fill=255); im.putalpha(mask)
+    d=ImageDraw.Draw(im); d.polygon([(128,25),(216,76),(216,178),(128,231),(40,178),(40,76)],outline=rgba((25,75,133),200),width=q(2))
+    im.alpha_composite(mark(190),(q(33),q(33))); d=ImageDraw.Draw(im)
+    rr(d,(57,226,199,230),2,BLUE,0,rgba(BLUE,130)); rr(d,(57,226,118,230),2,CYAN,0,rgba(CYAN,230))
+    save(im,OUT/'textures/icon.png')
+
+app_icon(); save(mark(128),OUT/'textures/ai.derco.png'); save(mark(128,34),OUT/'textures/clickgui/derco_water.png')
+ico=canvas(128); idraw=ImageDraw.Draw(ico); rr(idraw,(2,2,126,126),25,(24,82,142),2,rgba(NAVY,255)); ico.alpha_composite(mark(100),(q(14),q(14))); save(ico,OUT/'textures/clickgui/derco_ico.png')
+# Wordmark composition; use DejaVu when present, with a portable bitmap fallback.
+try: ft=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',q(54)); fr=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',q(54))
+except OSError: ft=fr=ImageFont.load_default()
+im=canvas(590,170); im.alpha_composite(mark(130),(q(8),q(18))); d=ImageDraw.Draw(im)
+d.text((q(154),q(39)),'Derco',font=ft,fill=rgba((235,247,255))); x=d.textbbox((q(154),q(39)),'Derco',font=ft)[2]+q(8); d.text((x,q(39)),'Visuals',font=fr,fill=rgba(CYAN))
+rr(d,(155,122,560,126),2,(20,70,120),0,rgba((20,70,120),180)); rr(d,(155,122,310,126),2,BLUE,0,rgba(BLUE,240))
+save(im,OUT/'textures/derco_logo.png')
+# Account/profile modal art: deliberate blank content slots, no user data or fake sign-in fields.
+im=canvas(380,215); d=ImageDraw.Draw(im)
+for y in range(215*S):
+    t=y/(215*S-1); c=tuple(round(a*(1-t)+b*t) for a,b in zip((13,34,66),(6,15,33)))+(255,)
+    ImageDraw.Draw(im).line((0,y,im.width,y),fill=c)
+rr(d,(1,1,379,214),15,(39,115,196),2); rr(d,(12,12,368,45),8,(34,108,180),1,rgba((12,42,80),190))
+for x in (20,28,36): ellipse(d,(x,24,x+4,28),None,0,rgba(CYAN,190))
+d.text((q(52),q(19)),'PROFILE / SESSION',font=ImageFont.load_default(),fill=rgba(PALE))
+ellipse(d,(28,66,96,134),BLUE,3,rgba((8,28,56))); ellipse(d,(51,78,73,100),CYAN,0,rgba(CYAN)); rr(d,(42,104,82,125),12,BLUE,0,rgba(BLUE))
+for y,w in ((79,220),(105,185),(131,145)): rr(d,(118,y,118+w,y+7),4,(37,80,123),0,rgba((37,80,123),190))
+rr(d,(22,174,358,176),1,(34,92,145),0,rgba((34,92,145),180)); rr(d,(22,174,125,176),1,CYAN,0,rgba(CYAN,230)); save(im,OUT/'textures/account_modal.png')
+
+# Each icon has its own recognisable silhouette, drawn in the same electric-blue/cyan language.
+def glyph(name,d):
+    if name in ('visuals','effects','fullbright'):
+        if name=='visuals': ellipse(d,(24,40,104,88),CYAN,4); ellipse(d,(48,29,80,99),BLUE,3); ellipse(d,(55,49,73,67),PALE,0,rgba(PALE))
+        elif name=='effects': poly(d,[(64,18),(72,52),(106,64),(72,76),(64,110),(56,76),(22,64),(56,52)],BLUE,0,rgba(BLUE,220)); ellipse(d,(59,59,69,69),None,0,rgba(PALE))
+        else:
+            ellipse(d,(44,44,84,84),CYAN,4)
+            for a in range(0,360,45):
+                x1=64+math.cos(math.radians(a))*27;y1=64+math.sin(math.radians(a))*27;x2=64+math.cos(math.radians(a))*43;y2=64+math.sin(math.radians(a))*43; ln(d,[(x1,y1),(x2,y2)],BLUE,4)
+    elif name in ('hud','inventory','scoreboard','hotkeys'):
+        if name=='hud': rr(d,(24,29,104,89),8,CYAN,4); ln(d,[(40,101),(88,101)],BLUE,4); ln(d,[(64,89),(64,101)],CYAN,3); rr(d,(34,41,59,61),3,BLUE,3); rr(d,(68,41,94,54),3,CYAN,3)
+        elif name=='inventory':
+            rr(d,(25,23,103,105),8,CYAN,4)
+            for y in (35,57,79):
+                for x in (36,58,80): rr(d,(x,y,x+13,y+13),2,BLUE,2)
+        elif name=='scoreboard':
+            rr(d,(30,20,98,108),7,CYAN,4)
+            for i,w in enumerate((38,27,45,31)): ln(d,[(42,39+i*16),(42+w,39+i*16)],BLUE if i%2 else CYAN,3)
+        else:
+            rr(d,(22,37,106,89),8,CYAN,4)
+            for y in (50,69):
+                for x in (33,48,63,78,93): rr(d,(x,y,x+8,y+8),2,BLUE if x%2 else CYAN,1,rgba(BLUE if x%2 else CYAN,160))

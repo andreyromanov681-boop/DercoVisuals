@@ -1,0 +1,37 @@
+    elif name in ('utilities','cooldowns'):
+        ellipse(d,(34,34,94,94),CYAN,6); ellipse(d,(52,52,76,76),BLUE,4)
+        for a in range(0,360,45):
+            x1=64+math.cos(math.radians(a))*32;y1=64+math.sin(math.radians(a))*32;x2=64+math.cos(math.radians(a))*43;y2=64+math.sin(math.radians(a))*43; ln(d,[(x1,y1),(x2,y2)],BLUE,4)
+        if name=='cooldowns': ln(d,[(64,43),(64,64),(82,76)],PALE,4)
+    elif name=='combat':
+        for r,c in ((40,CYAN),(27,BLUE),(12,PALE)): ellipse(d,(64-r,64-r,64+r,64+r),c,4)
+        ln(d,[(64,15),(64,30)],CYAN,3); ln(d,[(64,98),(64,113)],CYAN,3)
+    elif name=='hud_target':
+        ellipse(d,(24,24,104,104),CYAN,4); ellipse(d,(43,43,85,85),BLUE,4); ellipse(d,(58,58,70,70),None,0,rgba(PALE)); ln(d,[(80,43),(108,16)],CYAN,4)
+    elif name=='movement' or name=='trails':
+        pts=[(23,84),(42,67),(58,77),(78,45),(103,31)] if name=='movement' else [(22,85),(40,68),(56,76),(72,50),(90,58),(106,30)]
+        ln(d,pts,CYAN,5)
+        for x,y in pts: ellipse(d,(x-4,y-4,x+4,y+4),None,0,rgba(PALE))
+        if name=='movement': poly(d,[(94,22),(111,28),(102,44)],None,0,rgba(PALE))
+    elif name=='render' or name=='jump_circles':
+        for r,c in ((38,CYAN),(26,BLUE),(14,PALE)): ellipse(d,(64-r,64-r,64+r,64+r),c,3)
+        if name=='jump_circles': ln(d,[(64,87),(64,38)],CYAN,4); poly(d,[(54,49),(64,32),(74,49)],None,0,rgba(PALE))
+    elif name=='player' or name=='armor':
+        if name=='player': ellipse(d,(49,22,79,52),CYAN,4); ln(d,[(28,102),(28,81),(41,61),(87,61),(100,81),(100,102)],BLUE,5); ln(d,[(28,102),(100,102)],CYAN,4)
+        else: ln(d,[(64,22),(96,37),(91,78),(64,107),(37,78),(32,37),(64,22)],CYAN,5); ln(d,[(64,35),(64,88)],BLUE,4)
+    elif name=='world':
+        ellipse(d,(24,24,104,104),CYAN,4); ellipse(d,(45,24,83,104),BLUE,3); ln(d,[(27,51),(101,51)],BLUE,3); ln(d,[(27,77),(101,77)],BLUE,3)
+    elif name=='module_world':
+        ln(d,[(22,82),(43,58),(60,72),(80,39),(106,69)],CYAN,4); ln(d,[(24,91),(47,84),(70,91),(103,84)],BLUE,3); ellipse(d,(82,19,96,33),None,0,rgba(PALE))
+    elif name=='watermark':
+        poly(d,[(64,24),(92,40),(92,82),(64,104),(36,82),(36,40)],BLUE,3); ln(d,[(48,44),(65,44),(82,55),(84,65),(82,76),(65,88),(48,88)],CYAN,4); ln(d,[(48,44),(48,88)],CYAN,4)
+    elif name=='misc' or name=='particles':
+        if name=='misc': ln(d,[(40,40),(88,40),(64,88),(40,40)],CYAN,4); ln(d,[(40,40),(64,64),(88,40)],BLUE,3); ln(d,[(64,64),(64,88)],CYAN,3)
+        else:
+            for x,y,r,c in ((64,64,8,PALE),(37,45,6,CYAN),(90,39,5,BLUE),(88,88,7,CYAN),(34,91,4,BLUE),(61,28,4,CYAN)): ellipse(d,(x-r,y-r,x+r,y+r),None,0,rgba(c))
+    elif name=='bossbar': rr(d,(22,47,106,80),12,CYAN,4); rr(d,(29,54,80,73),8,BLUE,0,rgba(BLUE,220)); poly(d,[(95,31),(105,42),(95,53),(85,42)],None,0,rgba(PALE))
+    elif name=='potions': rr(d,(51,18,77,38),5,CYAN,3); ln(d,[(51,38),(42,53),(42,91),(53,104),(75,104),(86,91),(86,53),(77,38)],CYAN,4); poly(d,[(43,73),(85,73),(85,91),(74,101),(54,101),(43,91)],BLUE,0,rgba(BLUE,180))
+    elif name=='saturation': ellipse(d,(27,25,101,101),CYAN,4); poly(d,[(64,39),(47,66),(51,83),(64,94),(77,83),(81,66)],BLUE,0,rgba(BLUE,220))
+    elif name=='totems': rr(d,(40,21,88,107),8,CYAN,4); ellipse(d,(52,35,76,59),PALE,4); ln(d,[(64,64),(64,92)],BLUE,4); ln(d,[(49,76),(79,76)],CYAN,3)
+    elif name=='tnt_timer': rr(d,(31,50,97,99),7,CYAN,4); rr(d,(42,62,86,86),2,BLUE,0,rgba(BLUE,150)); ln(d,[(51,48),(51,38),(70,32),(70,48)],PALE,3); ellipse(d,(68,21,78,31),None,0,rgba(CYAN))
+    elif name=='crosshair':
