@@ -1139,6 +1139,396 @@ patch_generated_java('ai/derco/DercoVisuals.java', (
      '        });'),
 ))
 
+
+# DercoVisuals HUD visual system. Keep all feature logic in its original HUD classes;
+# this palette only standardizes surfaces, text, borders, and blue/cyan accents.
+hud_theme_path = java_root / 'ai' / 'derco' / 'hud' / 'core' / 'HudTheme.java'
+hud_theme_path.parent.mkdir(parents=True, exist_ok=True)
+hud_theme_path.write_text(r'''package ai.derco.hud.core;
+
+import java.awt.Color;
+
+/** Shared restrained navy / blue HUD palette for all DercoVisuals overlays. */
+public final class HudTheme {
+    public static final Color BACKGROUND_TOP = new Color(10, 24, 42, 238);
+    public static final Color BACKGROUND_BOTTOM = new Color(5, 15, 28, 242);
+    public static final Color PANEL = new Color(9, 25, 42, 218);
+    public static final Color SURFACE = new Color(14, 33, 54, 242);
+    public static final Color SURFACE_RAISED = new Color(19, 43, 68, 242);
+    public static final Color SURFACE_DEEP = new Color(6, 17, 30, 242);
+    public static final Color SLOT_BG = new Color(5, 17, 31, 188);
+    public static final Color BORDER = new Color(48, 104, 148, 112);
+    public static final Color SLOT_BORDER = new Color(49, 105, 148, 96);
+    public static final Color TEXT = new Color(244, 249, 255, 255);
+    public static final Color MUTED = new Color(178, 202, 223, 245);
+    public static final Color ACCENT = new Color(53, 185, 255, 255);
+    public static final Color ACCENT_DARK = new Color(22, 112, 190, 255);
+    public static final Color ACCENT_GLOW = new Color(53, 185, 255, 58);
+    public static final Color GUIDE = new Color(53, 185, 255, 190);
+    public static final Color GUIDE_CENTER = new Color(22, 112, 190, 190);
+    public static final Color GUIDE_EDGE = new Color(105, 219, 255, 190);
+
+    private HudTheme() { }
+
+    public static Color withAlpha(Color color, float alpha) {
+        float clamped = Math.max(0.0F, Math.min(1.0F, alpha));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(),
+            Math.max(0, Math.min(255, Math.round(color.getAlpha() * clamped))));
+    }
+}
+''', encoding='utf-8')
+
+patch_generated_java('ai/derco/hud/core/HudElement.java', (
+    ('new Color(130, 105, 255, (int)(25.0F * fH))',
+     'ai.derco.hud.core.HudTheme.withAlpha(ai.derco.hud.core.HudTheme.ACCENT_GLOW, fH)'),
+))
+
+patch_generated_java('ai/derco/hud/core/HudElementManager.java', (
+    ('private static final Color m = new Color(100, 180, 255, 180);',
+     'private static final Color m = ai.derco.hud.core.HudTheme.GUIDE;'),
+    ('private static final Color n = new Color(200, 100, 255, 180);',
+     'private static final Color n = ai.derco.hud.core.HudTheme.GUIDE_CENTER;'),
+    ('private static final Color o = new Color(255, 150, 80, 180);',
+     'private static final Color o = ai.derco.hud.core.HudTheme.GUIDE_EDGE;'),
+    ('this.f = new HotkeysHudElement(10.0F, 110.0F);',
+     'this.f = new HotkeysHudElement(10.0F, 118.0F);'),
+    ('this.g = new CooldownsHudElement(Math.max(10.0F, width - 130.0F), 10.0F);',
+     'this.g = new CooldownsHudElement(Math.max(10.0F, width - 142.0F), 10.0F);'),
+    ('this.h = new TargetHudElement(Math.max(10.0F, (width - 130.0F) / 2.0F), Math.max(10.0F, height - 61.0F));',
+     'this.h = new TargetHudElement(Math.max(10.0F, width - 142.0F), Math.max(10.0F, height - 64.0F));'),
+    ('this.saturationHud = new SaturationHudElement(width / 2.0F + 10.0F, Math.max(10.0F, height - 49.0F));',
+     'this.saturationHud = new SaturationHudElement(Math.max(10.0F, width / 2.0F - 91.0F), Math.max(10.0F, height - 49.0F));'),
+    ('this.inventoryHud = new InventoryHudElement(Math.max(10.0F, (width - 226.0F) / 2.0F), Math.max(10.0F, height - 145.0F));',
+     'this.inventoryHud = new InventoryHudElement(10.0F, Math.max(10.0F, height - 92.0F));'),
+    ('this.scoreboardHud = new ScoreboardHudElement(Math.max(10.0F, width - 130.0F), Math.max(10.0F, (height - 80.0F) / 2.0F));',
+     'this.scoreboardHud = new ScoreboardHudElement(Math.max(10.0F, width - 142.0F), Math.max(10.0F, (height - 80.0F) / 2.0F));'),
+))
+
+patch_generated_java('ai/derco/hud/elements/WatermarkHudElement.java', (
+    ('private static final Color CARD_TOP = new Color(15, 15, 26, 232);',
+     'private static final Color CARD_TOP = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color CARD_BOTTOM = new Color(9, 9, 18, 236);',
+     'private static final Color CARD_BOTTOM = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('withAlpha(new Color(130, 95, 255), 1.0F)',
+     'withAlpha(ai.derco.hud.core.HudTheme.ACCENT, 1.0F)'),
+))
+
+patch_generated_java('ai/derco/hud/elements/TargetHudElement.java', (
+    ('private static final Color BACKGROUND = new Color(15, 15, 18, 245);',
+     'private static final Color BACKGROUND = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color HEALTH_TEXT = new Color(182, 182, 191, 245);',
+     'private static final Color HEALTH_TEXT = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color BAR_BACKGROUND = new Color(21, 18, 28, 245);',
+     'private static final Color BAR_BACKGROUND = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color BAR_COLOR = new Color(95, 65, 240, 255);',
+     'private static final Color BAR_COLOR = ai.derco.hud.core.HudTheme.ACCENT;'),
+    ('private static final Color BAR_GLOW = new Color(95, 65, 240, 60);',
+     'private static final Color BAR_GLOW = ai.derco.hud.core.HudTheme.ACCENT_GLOW;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/InventoryHudElement.java', (
+    ('private static final Color OVERALL_BG_COLOR = new Color(25, 27, 32, 110);',
+     'private static final Color OVERALL_BG_COLOR = ai.derco.hud.core.HudTheme.PANEL;'),
+    ('private static final Color OVERALL_BORDER_COLOR = new Color(40, 45, 55, 90);',
+     'private static final Color OVERALL_BORDER_COLOR = ai.derco.hud.core.HudTheme.BORDER;'),
+    ('private static final Color SLOT_BG_COLOR = new Color(5, 5, 5, 91);',
+     'private static final Color SLOT_BG_COLOR = ai.derco.hud.core.HudTheme.SLOT_BG;'),
+    ('private static final Color SLOT_BORDER_COLOR = new Color(40, 45, 55, 80);',
+     'private static final Color SLOT_BORDER_COLOR = ai.derco.hud.core.HudTheme.SLOT_BORDER;'),
+    ('renderer2D.a(this.b, this.c, this.d, this.e, 4.0F * fScale, cBg, MatrixStackVar);',
+     'renderer2D.a(this.b, this.c, this.d, this.e, 4.0F * fScale, cBg, MatrixStackVar);\n'
+     '               renderer2D.a(this.b, this.c, this.d, 1.0F * fScale, 0.0F,\n'
+     '                  ai.derco.hud.core.HudTheme.withAlpha(ai.derco.hud.core.HudTheme.ACCENT, 0.42F * fAlpha), MatrixStackVar);'),
+))
+
+patch_generated_java('ai/derco/hud/elements/TotemsHudElement.java', (
+    ('float fScale = this.scale();\n'
+     '               Matrix3x2fStack matrices = currentDrawContext.getMatrices();',
+     'float fScale = this.scale();\n'
+     '               renderer2D.a(this.b, this.c, this.d, this.e, 3.0F * fScale,\n'
+     '                  ai.derco.hud.core.HudTheme.PANEL, MatrixStackVar);\n'
+     '               renderer2D.a(this.b, this.c, this.d, 1.0F * fScale, 0.0F,\n'
+     '                  ai.derco.hud.core.HudTheme.ACCENT_GLOW, MatrixStackVar);\n'
+     '               Matrix3x2fStack matrices = currentDrawContext.getMatrices();'),
+))
+
+patch_generated_java('ai/derco/hud/elements/BossbarHudElement.java', (
+    ('Color bgColor = new Color(20, 20, 20, 100);',
+     'Color bgColor = ai.derco.hud.core.HudTheme.PANEL;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/ScoreboardHudElement.java', (
+    ('Color bgColor = new Color(20, 20, 20, 100);',
+     'Color bgColor = ai.derco.hud.core.HudTheme.PANEL;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
+    ('private static final Color o = new Color(13, 13, 17);',
+     'private static final Color o = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('private static final Color p = new Color(17, 17, 23);',
+     'private static final Color p = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color r = new Color(223, 223, 243);',
+     'private static final Color r = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color s = new Color(20, 20, 28);',
+     'private static final Color s = ai.derco.hud.core.HudTheme.BORDER;'),
+    ('private static final Color t = new Color(16, 16, 21);',
+     'private static final Color t = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color u = new Color(17, 17, 23);',
+     'private static final Color u = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color v = new Color(23, 23, 30);',
+     'private static final Color v = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color w = new Color(18, 18, 24);',
+     'private static final Color w = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color y = new Color(115, 83, 255);',
+     'private static final Color y = ai.derco.hud.core.HudTheme.ACCENT;'),
+    ('private static final Color z = new Color(70, 46, 174);',
+     'private static final Color z = ai.derco.hud.core.HudTheme.ACCENT_DARK;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
+    ('private static final Color m = new Color(13, 13, 17);',
+     'private static final Color m = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('private static final Color n = new Color(17, 17, 23);',
+     'private static final Color n = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color p = new Color(223, 223, 243);',
+     'private static final Color p = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color q = new Color(20, 20, 28);',
+     'private static final Color q = ai.derco.hud.core.HudTheme.BORDER;'),
+    ('private static final Color s = new Color(17, 17, 23);',
+     'private static final Color s = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color t = new Color(23, 23, 30);',
+     'private static final Color t = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color u = new Color(18, 18, 24);',
+     'private static final Color u = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color v = new Color(23, 23, 30);',
+     'private static final Color v = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color w = new Color(18, 18, 24);',
+     'private static final Color w = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/HotkeysHudElement.java', (
+    ('static final Color o = new Color(13, 13, 17);',
+     'static final Color o = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('static final Color p = new Color(17, 17, 23);',
+     'static final Color p = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color r = new Color(223, 223, 243);',
+     'private static final Color r = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color s = new Color(20, 20, 28);',
+     'private static final Color s = ai.derco.hud.core.HudTheme.BORDER;'),
+    ('private static final Color t = new Color(16, 16, 21);',
+     'private static final Color t = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color u = new Color(17, 17, 23);',
+     'private static final Color u = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color v = new Color(23, 23, 30);',
+     'private static final Color v = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color w = new Color(18, 18, 24);',
+     'private static final Color w = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color x = new Color(115, 83, 255);',
+     'private static final Color x = ai.derco.hud.core.HudTheme.ACCENT;'),
+    ('private static final Color y = new Color(70, 46, 174);',
+     'private static final Color y = ai.derco.hud.core.HudTheme.ACCENT_DARK;'),
+    ('if (clientModule.k() && clientModule.j() != 0) {\n'
+     '            arrayList.add(new HotkeysHudElement.HotkeySnapshot(clientModule, clientModule.g(), "  " + this.b(clientModule.j()) + "  "));',
+     'if (clientModule.k()) {\n'
+     '            String keyName = clientModule.j() == 0 ? "—" : this.b(clientModule.j());\n'
+     '            arrayList.add(new HotkeysHudElement.HotkeySnapshot(clientModule, clientModule.g(), "  " + keyName + "  "));'),
+))
+
+patch_generated_java('ai/derco/modules/hud/HotkeysHud.java', (
+    ('@ModuleInfo(a = "Hotkeys", b = "Displays active key bindings.", c = ModuleCategory.HUD)',
+     '@ModuleInfo(a = "Hotkeys", b = "Displays active modules and their key bindings.", c = ModuleCategory.HUD)'),
+))
+
+patch_generated_java('ai/derco/modules/hud/ClientColor.java', (
+    ('private static final Color DEFAULT_COLOR = new Color(138, 43, 226);',
+     'private static final Color DEFAULT_COLOR = new Color(53, 145, 235);'),
+    ('private static final Color DEFAULT_GRADIENT_START = Color.WHITE;',
+     'private static final Color DEFAULT_GRADIENT_START = new Color(95, 215, 255);'),
+    ('private static final Color DEFAULT_GRADIENT_END = new Color(0, 125, 245);',
+     'private static final Color DEFAULT_GRADIENT_END = new Color(19, 105, 205);'),
+    ('private static final Color[] ASTOLFO_COLORS = new Color[]{new Color(255, 121, 198), new Color(170, 70, 255), new Color(80, 181, 255)};',
+     'private static final Color[] ASTOLFO_COLORS = new Color[]{new Color(53, 185, 255), new Color(22, 112, 190), new Color(105, 219, 255)};'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/HudNotificationCenter.java', (
+    ('private static final Color c = new Color(19, 19, 25);',
+     'private static final Color c = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color d = new Color(19, 19, 26);',
+     'private static final Color d = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color e = new Color(13, 13, 17);',
+     'private static final Color e = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('private static final Color f = new Color(17, 17, 23);',
+     'private static final Color f = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/MediaPlaybackNotification.java', (
+    ('private static final Color n = new Color(223, 223, 243);',
+     'private static final Color n = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color p = new Color(76, 46, 212, 100);',
+     'private static final Color p = ai.derco.hud.core.HudTheme.ACCENT_GLOW;'),
+    ('private static final Color q = new Color(115, 83, 255);',
+     'private static final Color q = ai.derco.hud.core.HudTheme.ACCENT;'),
+    ('private static final Color r = new Color(70, 46, 174);',
+     'private static final Color r = ai.derco.hud.core.HudTheme.ACCENT_DARK;'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/ActionNotification.java', (
+    ('CLOUD("\\ue904", new Color(100, 72, 227), new Color(100, 72, 227))',
+     'CLOUD("\\ue904", ai.derco.hud.core.HudTheme.ACCENT, ai.derco.hud.core.HudTheme.ACCENT_DARK)'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/TextNotification.java', (
+    ('private static final Color o = new Color(223, 223, 243);',
+     'private static final Color o = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('new Color(223, 223, 255, i)',
+     'ai.derco.hud.core.HudTheme.withAlpha(ai.derco.hud.core.HudTheme.ACCENT, i / 255.0F)'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/WatermarkOverlay.java', (
+    ('private static final Color CARD_TOP = new Color(8, 8, 11, 235);',
+     'private static final Color CARD_TOP = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color CARD_BOTTOM = new Color(5, 5, 8, 240);',
+     'private static final Color CARD_BOTTOM = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('private static final Color MUTED = new Color(145, 145, 160, 220);',
+     'private static final Color MUTED = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('''   private void drawSegments(Matrix3x2fStack MatrixStackVar, float f, float f2, float f3) {
+      FontRenderer fontRenderer = FontManager.MEDIUM[14];
+      float fB = f2 - fontRenderer.b("DercoVisuals") / 4.0F;
+      if (ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.a() && ModuleRegistry.WATERMARK.fpsAndPing().a()) {
+         this.drawPart(
+            fontRenderer,
+            this.getFps() + " FPS",
+            this.drawPart(
+               fontRenderer,
+               " / ",
+               this.drawPart(
+                  fontRenderer,
+                  this.getPingMs() + " ms",
+                  this.drawPart(
+                     fontRenderer, " / ", this.drawPart(fontRenderer, "DercoVisuals", f, fB, TEXT, f3, MatrixStackVar), fB, MUTED, f3, MatrixStackVar
+                  ),
+                  fB,
+                  TEXT,
+                  f3,
+                  MatrixStackVar
+               ),
+               fB,
+               MUTED,
+               f3,
+               MatrixStackVar
+            ),
+            fB,
+            TEXT,
+            f3,
+            MatrixStackVar
+         );
+      } else {
+         this.drawPart(fontRenderer, "DercoVisuals", f, fB, TEXT, f3, MatrixStackVar);
+      }
+   }''',
+     '''   private void drawSegments(Matrix3x2fStack MatrixStackVar, float f, float f2, float f3) {
+      FontRenderer fontRenderer = FontManager.MEDIUM[14];
+      float fB = f2 - fontRenderer.b("DercoVisuals") / 4.0F;
+      float cursor = this.drawPart(fontRenderer, "DercoVisuals", f, fB, TEXT, f3, MatrixStackVar);
+      if (this.coordinatesEnabled()) {
+         cursor = this.drawPart(fontRenderer, " / ", cursor, fB, MUTED, f3, MatrixStackVar);
+         cursor = this.drawPart(fontRenderer, this.getCoordinates(), cursor, fB,
+            ai.derco.hud.core.HudTheme.ACCENT, f3, MatrixStackVar);
+      }
+
+      if (ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.a() && ModuleRegistry.WATERMARK.fpsAndPing().a()) {
+         cursor = this.drawPart(fontRenderer, " / ", cursor, fB, MUTED, f3, MatrixStackVar);
+         cursor = this.drawPart(fontRenderer, this.getPingMs() + " ms", cursor, fB, TEXT, f3, MatrixStackVar);
+         cursor = this.drawPart(fontRenderer, " / ", cursor, fB, MUTED, f3, MatrixStackVar);
+         this.drawPart(fontRenderer, this.getFps() + " FPS", cursor, fB,
+            ai.derco.hud.core.HudTheme.ACCENT, f3, MatrixStackVar);
+      }
+   }
+
+   private boolean coordinatesEnabled() {
+      return ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.coordinates().a();
+   }
+
+   private String getCoordinates() {
+      if (c.player == null) return "X 0 Y 0 Z 0";
+      return "X " + (int)Math.floor(c.player.getX())
+         + " Y " + (int)Math.floor(c.player.getY())
+         + " Z " + (int)Math.floor(c.player.getZ());
+   }'''),
+    ('''   private float measureTextWidth() {
+      FontRenderer fontRenderer = FontManager.MEDIUM[14];
+      return ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.a() && ModuleRegistry.WATERMARK.fpsAndPing().a()
+         ? 23.0F
+            + fontRenderer.a("DercoVisuals")
+            + fontRenderer.a(" / ")
+            + fontRenderer.a(this.getPingMs() + " ms")
+            + fontRenderer.a(" / ")
+            + fontRenderer.a(this.getFps() + " FPS")
+         : 23.0F + fontRenderer.a("DercoVisuals");
+   }''',
+     '''   private float measureTextWidth() {
+      FontRenderer fontRenderer = FontManager.MEDIUM[14];
+      float width = 23.0F + fontRenderer.a("DercoVisuals");
+      if (this.coordinatesEnabled()) {
+         width += fontRenderer.a(" / ") + fontRenderer.a(this.getCoordinates());
+      }
+
+      if (ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.a() && ModuleRegistry.WATERMARK.fpsAndPing().a()) {
+         width += fontRenderer.a(" / ")
+            + fontRenderer.a(this.getPingMs() + " ms")
+            + fontRenderer.a(" / ")
+            + fontRenderer.a(this.getFps() + " FPS");
+      }
+      return width;
+   }'''),
+))
+
+patch_generated_java('ai/derco/modules/hud/Watermark.java', (
+    ('private final BooleanSetting fpsAndPing = new BooleanSetting("FPS & Ping", true);',
+     'private final BooleanSetting fpsAndPing = new BooleanSetting("FPS & Ping", true);\n'
+     '   private final BooleanSetting coordinates = new BooleanSetting("Координаты", true);'),
+    ('   public BooleanSetting events() {',
+     '   public BooleanSetting coordinates() {\n'
+     '      return this.coordinates;\n'
+     '   }\n\n'
+     '   public BooleanSetting events() {'),
+))
+
+patch_generated_java('ai/derco/mixin/InGameHudMixin.java', (
+    ('''            int iGetScaledWindowWidth = DrawContextVar.getScaledWindowWidth() / 2;
+            int i = ClientPlayerEntityVar.getMainArm().getOpposite() == Arm.RIGHT && !ClientPlayerEntityVar.getOffHandStack().isEmpty() ? 24 : 0;
+
+            for (int i2 = 0; i2 < 4; i2++) {
+                this.renderHotbarItem(
+                   DrawContextVar,
+                   iGetScaledWindowWidth + 92 + 10 + i2 * 20 + 2 + i,
+                   DrawContextVar.getScaledWindowHeight() - 16 - 3,
+                   RenderTickCounterVar,
+                   ClientPlayerEntityVar,
+                   ClientPlayerEntityVar.getInventory().getStack(36 + (3 - i2)),
+                   i2 + 1
+                );
+             }''',
+     '''            int iGetScaledWindowWidth = DrawContextVar.getScaledWindowWidth() / 2;
+            int i = ClientPlayerEntityVar.getMainArm().getOpposite() == Arm.RIGHT && !ClientPlayerEntityVar.getOffHandStack().isEmpty() ? 24 : 0;
+            int armorHudX = iGetScaledWindowWidth + 92 + 10 + i;
+            int armorHudY = DrawContextVar.getScaledWindowHeight() - 16 - 3;
+            DrawContextVar.fill(armorHudX - 2, armorHudY - 2, armorHudX + 80, armorHudY + 18, 0xD909192B);
+            DrawContextVar.fill(armorHudX - 2, armorHudY - 2, armorHudX + 80, armorHudY - 1, 0xFF35B9FF);
+
+            for (int i2 = 0; i2 < 4; i2++) {
+                this.renderHotbarItem(
+                   DrawContextVar,
+                   armorHudX + i2 * 20 + 2,
+                   armorHudY,
+                   RenderTickCounterVar,
+                   ClientPlayerEntityVar,
+                   ClientPlayerEntityVar.getInventory().getStack(36 + (3 - i2)),
+                   i2 + 1
+                );
+             }'''),
+))
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.
