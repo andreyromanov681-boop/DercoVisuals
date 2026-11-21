@@ -160,3 +160,13 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Separate non-fatal issue from the user's log remains: `EntityRendererHitboxMixin` still targets the old `EntityRenderDispatcher` class name. Yarn 1.21.11 renames the class to `EntityRenderManager`, and the old hitbox API needs a deliberate port rather than a blind rename. Existing non-fatal remapping warnings for `modifiers`, `MapMarkerDistanceMixin`, and `FramebufferMixin` also remain.
 - No direct Minecraft client runtime launch was available in this session. The replacement JAR is CI-built and bytecode-inspected, but the user's next launch is still required to confirm the startup crash is gone in their 205-mod environment.
 - Next: have the user test this JAR, collect the new `latest.log` if another DercoVisuals mixin fails, then port the hitbox customizer against the current 1.21.11 rendering API.
+
+
+## 2026-11-21 — Fix overloaded DrawContext stack-overlay injection
+
+- Assistant/tool: ChatGPT bug-fix session using the user's second Fabric 1.21.11 crash log.
+- Confirmed the crash is a second overload-selection issue in `DrawContextMixin.onDrawStackOverlay`: the handler includes the optional `String stackCountText` parameter, but the name-only `drawStackOverlay` selector also resolves to the four-argument overload. Mixin reports expected `(TextRenderer, ItemStack, int, int, CallbackInfo)` but finds `(TextRenderer, ItemStack, int, int, String, CallbackInfo)`.
+- Yarn `1.21.11+build.3` documents both overloads: `drawStackOverlay(TextRenderer, ItemStack, int, int)` and `drawStackOverlay(TextRenderer, ItemStack, int, int, String)`. Updated the generator to target the exact five-argument descriptor `drawStackOverlay(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/item/ItemStack;IILjava/lang/String;)V`, preserving the handler's nullable custom count text behavior.
+- Source-of-truth change: `tools/prepare_pulse_foundation.py`; no generated output or original `pulse-src.zip` was manually edited.
+- CI/build and remapped JAR inspection are pending. A successful build does not prove the user's full modpack runtime starts; the next launch log remains the runtime check.
+- Next: verify CI artifact and remapped Mixin target, send the JAR, then inspect any subsequent DercoVisuals Mixin error from the user's next launch.
