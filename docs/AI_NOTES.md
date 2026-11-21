@@ -192,3 +192,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - The previous `pulse-foundation` changes were preserved, including the configurable potion-HUD effect limit and both DrawContext overload fixes. The original `pulse-src.zip` remains untouched.
 - CI/build and remapped-JAR bytecode inspection for this commit are pending. A successful build does not prove in-game runtime behavior; the user's next launch will confirm whether another Mixin error remains.
 - Next: inspect CI and verify both scoreboard injections remap to `method_1757(Lnet/minecraft/class_332;Lnet/minecraft/class_266;)V`, then send the rebuilt JAR.
+
+
+## 2026-11-21 — Port Hitbox Customizer suppression to 1.21.11
+
+- Assistant/tool: ChatGPT maintenance session.
+- Audited the active client mixins after the three startup crash fixes. Found the remaining non-fatal missing-target warning: `EntityRendererHitboxMixin` still targeted the removed `EntityRenderDispatcher.shouldRenderHitboxes()` API.
+- Verified Yarn `1.21.11+build.3`: the class is now `net.minecraft.client.render.debug.EntityHitboxDebugRenderer`, and its renderer method is `render(DDD Lnet/minecraft/world/debug/DebugDataStore; Lnet/minecraft/client/render/Frustum; F)V` (without spaces in the Mixin selector). This renderer is the current F3+B entity-hitbox path.
+- Updated only the source-of-truth generator `tools/prepare_pulse_foundation.py`. It now retargets the mixin to `EntityHitboxDebugRenderer.render(...)` and cancels that renderer only while DercoVisuals' own Hitbox Customizer is enabled. The module's custom box/line rendering and settings remain untouched; the vanilla debug renderer continues working when the module is disabled.
+- Pre-commit validation: applied all four guarded source replacements to the latest generated-source artifact; each old anchor matched exactly once and the resulting Java source uses the current class, exact method descriptor, and `CallbackInfo` cancellation. Yarn API documentation confirms the target class and method.
+- CI/build and remapped JAR verification are pending for this source-generator change. No Minecraft client runtime test is available here. The original `pulse-src.zip`, `main`, and other branches were not modified.
+- Next: verify CI source generation/compile, inspect the remapped mixin annotation in the actual JAR, and confirm the missing-target warning is gone.
