@@ -850,6 +850,37 @@ patch_generated_java('ai/derco/mixin/InGameHudMixin.java', (
      '@Inject(require = 0, method = "renderScoreboardSidebar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/scoreboard/ScoreboardObjective;)V", at = @At("TAIL"))'),
 ))
 
+# Minecraft 1.21.11 moved vanilla entity hitbox rendering out of EntityRenderManager.
+# F3+B now delegates to EntityHitboxDebugRenderer.render(...); suppress that renderer
+# only while DercoVisuals' own Hitbox Customizer is enabled.
+# Yarn 1.21.11+build.3 selector:
+# render(DDD, DebugDataStore, Frustum, float) -> V.
+patch_generated_java('ai/derco/mixin/EntityRendererHitboxMixin.java', (
+    ('import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;',
+     'import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;'),
+    ('import ai.derco.module.ModuleRegistry;',
+     'import ai.derco.module.ModuleRegistry;\\nimport net.minecraft.client.render.Frustum;\\nimport net.minecraft.world.debug.DebugDataStore;'),
+    ('@Mixin(targets = "net/minecraft/client/render/entity/EntityRenderDispatcher")',
+     '@Mixin(targets = "net/minecraft/client/render/debug/EntityHitboxDebugRenderer")'),
+    ('   @Inject(method = "shouldRenderHitboxes", at = @At("HEAD"), cancellable = true)\\n'
+     '   private void suppressVanillaHitbox(CallbackInfoReturnable<Boolean> cir) {\\n'
+     '      if (ModuleRegistry.HITBOX_CUSTOMIZER != null && ModuleRegistry.HITBOX_CUSTOMIZER.k()) {\\n'
+     '         cir.setReturnValue(false);\\n'
+     '      }\\n'
+     '   }',
+     '   @Inject(\\n'
+     '      method = "render(DDDLnet/minecraft/world/debug/DebugDataStore;Lnet/minecraft/client/render/Frustum;F)V",\\n'
+     '      at = @At("HEAD"),\\n'
+     '      cancellable = true\\n'
+     '   )\\n'
+     '   private void suppressVanillaHitbox(double cameraX, double cameraY, double cameraZ, DebugDataStore store,\\n'
+     '         Frustum frustum, float tickProgress, CallbackInfo ci) {\\n'
+     '      if (ModuleRegistry.HITBOX_CUSTOMIZER != null && ModuleRegistry.HITBOX_CUSTOMIZER.k()) {\\n'
+     '         ci.cancel();\\n'
+     '      }\\n'
+     '   }'),
+))
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.
