@@ -1262,8 +1262,8 @@ replace_generated_once(
 module_rows_path = java_root / 'ai' / 'derco' / 'gui' / 'modules' / 'ModuleRowRenderer.java'
 replace_generated_once(
     module_rows_path,
-    'import ai.derco.render.Renderer2D;\\n',
-    'import ai.derco.render.Renderer2D;\\nimport ai.derco.render.icons.IconTextureRegistry;\\n',
+    'import ai.derco.render.Renderer2D;\n',
+    'import ai.derco.render.Renderer2D;\nimport ai.derco.render.icons.IconTextureRegistry;\n',
     'module icon import'
 )
 replace_generated_once(
