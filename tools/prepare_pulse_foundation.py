@@ -600,7 +600,10 @@ metadata.update({
     'description': 'A free, modular, client-side visual suite for Minecraft 1.21.11.',
     'authors': ['enizer6569'], 'license': 'LicenseRef-DercoVisuals-Community',
     'environment': 'client',
-    'entrypoints': {\n        'main': ['ai.derco.DercoVisuals'],\n        'preLaunch': ['ai.derco.crash.CrashLogBootstrap']\n    },
+    'entrypoints': {
+        'main': ['ai.derco.DercoVisuals'],
+        'preLaunch': ['ai.derco.crash.CrashLogBootstrap']
+    },
     'depends': {'fabricloader': '>=0.18.1', 'fabric': '*', 'minecraft': '~1.21.11', 'java': '>=21'}
 })
 metadata['jars'] = [{'file': f'META-INF/jars/{jar.name}'} for jar in sorted((UP / 'libs').glob('*.jar'))]
