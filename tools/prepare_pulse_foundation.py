@@ -800,11 +800,8 @@ for json_path in sorted((SRC / 'resources').rglob('*.json')):
         raise SystemExit(f'Invalid generated JSON resource {json_path.relative_to(ROOT)}: {exc}')
 
 generated_metadata = json.loads(meta.read_text(encoding='utf-8'))
-if generated_metadata.get('version') != '
- + '{version}':
-    raise SystemExit('fabric.mod.json must retain the 
- + '{version} token for Gradle resource expansion')
-
+if generated_metadata.get('version') != chr(36) + '{version}':
+    raise SystemExit('fabric.mod.json version placeholder must be present for Gradle resource expansion')
 generated_mixin_config = json.loads(mixin_config_path.read_text(encoding='utf-8'))
 mixin_source_root = java_root / 'ai' / 'derco' / 'mixin'
 for mixin_name in (*generated_mixin_config.get('mixins', []), *generated_mixin_config.get('client', [])):
