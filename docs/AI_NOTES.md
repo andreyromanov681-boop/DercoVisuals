@@ -251,3 +251,6 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Latest baseline artifact: CI run #71 passed on `pulse-foundation`. The new branch commit with the HUD generator patch is `c8ea02dce0f1b0270c82700263b4a65cb4ffd844`. The branch PR CI is pending at the time of this note.
 - No Minecraft client was launched in this environment, so actual in-game overlap at multiple GUI scales, animation feel, and saved-layout restart behavior still require runtime confirmation. No HUD function was intentionally removed or replaced with a placeholder.
 - Next: pass the PR CI source-generation, Java compile, and remapped-JAR checks; inspect the generated sources/remapped JAR; then validate in-game at 16:9 and a smaller GUI scale.
+
+
+- Follow-up after initial PR CI run #74: the guarded source generator stopped at the Armor HUD patch because the decompiler-generated `InGameHudMixin` loop indentation differed from the longer block anchor. The preceding HUD patch anchors all matched and the CI diagnostic artifact was uploaded. Replaced the fragile whole-loop replacement with a small exact insertion after the existing offhand-offset calculation; the four original armor item render calls and their positions remain unchanged. Correction commit: `27902f7cff2e10150a2e6ef93377ace47b5a6d95`. Re-run CI is pending.
