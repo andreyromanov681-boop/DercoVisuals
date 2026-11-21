@@ -264,9 +264,9 @@ patch_generated_java('ai/derco/mixin/accessor/ItemCooldownEntryAccessor.java', (
 # TextMixin never reads the decompiler-emitted record field. Remove the unused
 # intermediary @Shadow instead of carrying an invalid named-namespace field target.
 patch_generated_java('ai/derco/mixin/TextMixin.java', (
-    ('import org.spongepowered.asm.mixin.Final;\\n', ''),
-    ('import org.spongepowered.asm.mixin.Shadow;\\n', ''),
-    ('   @Shadow\\n   @Final\\n   private String comp_737;\\n', ''),
+    ('import org.spongepowered.asm.mixin.Final;\n', ''),
+    ('import org.spongepowered.asm.mixin.Shadow;\n', ''),
+    ('   @Shadow\n   @Final\n   private String comp_737;\n', ''),
 ))
 
 # javac synthesizes $assertionsDisabled when compiling Java assert statements.

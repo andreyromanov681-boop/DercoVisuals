@@ -129,3 +129,6 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Updated the source-of-truth generator to emit the correct named target and accessor field names. Also removed the unused intermediary `@Shadow comp_737` field from `TextMixin`, which generated a separate remapping warning and was never read by the mixin.
 - Validation before commit: applied the exact guarded patches to the generated Java artifact from run #44878293814; verified the expected target and named accessor fields and confirmed that the stale intermediary names were absent. Full CI for this change is pending; no local Minecraft runtime test was available.
 - Next: inspect the CI run triggered by this commit, confirm the Mixin annotation processor no longer reports the cooldown/text remapping warnings, then smoke-test the Cooldown Tracker in Minecraft 1.21.11.
+
+
+- Follow-up validation note (2026-11-21): post-commit inspection caught over-escaped newline literals in the new TextMixin cleanup guard. Corrected the generator patch so its exact source snippets match real line breaks; the earlier local check had validated the intended Java edits, not the committed Python escape representation. The replacement CI run is the authoritative build check.
