@@ -257,3 +257,9 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 
 
 - Follow-up correction after CI run #76: while narrowing the armor insertion, the replacement initially matched an earlier legacy `InGameHudMixin` patch anchor and removed a later generator section. Restored the complete generator from the prior HUD commit, replaced only the final Armor HUD patch block (verified replacement range: 1,798 characters), and confirmed the `CrashLogBootstrap` generation/validation section remains present. Also moved the default Hotkeys panel down to y=238 to give the Potion Effects panel more room. Correction commit: `372eb19718c1bdab268ce4d75e8e29df74a98298`; CI run pending.
+
+
+- Final verification follow-up: PR head commit `afb3205926701a4477c84236a83a95c766309f39` passed GitHub Actions run #80 (https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44914292225) on Java 21 / Gradle 9.2.1. Confirmed `compileJava`, `remapJar`, `remapSourcesJar`, `assemble`, and `build` all completed successfully; CI reported `BUILD SUCCESSFUL`.
+- Downloaded and inspected the resulting remapped artifact `DercoVisuals-1.0.0.jar` (SHA-256: `999b07c58632ac12f33de1470920147626c58a536f3efbc43830d0fa6840ecc9`). Verified the packaged `HudTheme.class`, updated HUD element/notification classes, `WatermarkOverlay` coordinate-accessor bytecode, `InGameHudMixin`, and Fabric metadata targeting Minecraft `~1.21.11` / Java `>=21`.
+- Visual attachment prepared for review is an illustrative placement concept, not a Minecraft runtime screenshot. No Minecraft client launch was available here; GUI-scale overlap, animation feel, and config persistence after an actual restart remain the final manual runtime checks.
+- Next: install the CI JAR in a test profile, confirm default layout at 16:9 and a smaller GUI scale, drag/resize a few panels, restart, and verify restored positions and the coordinate setting.
