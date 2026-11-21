@@ -61,6 +61,26 @@ def main() -> None:
 
     with ZipFile(jars[0]) as jar:
         names = set(jar.namelist())
+        required_classes = {
+            "ai/derco/gui/friends/FriendStore.class",
+            "ai/derco/gui/friends/FriendLookup.class",
+            "ai/derco/gui/friends/FriendsPanel.class",
+            "ai/derco/protection/NoFriendDamage.class",
+            "ai/derco/mixin/NoFriendDamageMixin.class",
+        }
+        missing_classes = sorted(required_classes - names)
+        if missing_classes:
+            fail("friend protection classes absent from runtime JAR: " + ", ".join(missing_classes))
+
+        mixin_config_name = "dercovisuals.mixins.json"
+        if mixin_config_name not in names:
+            fail("dercovisuals.mixins.json is missing from the runtime JAR")
+        mixin_config = json.loads(jar.read(mixin_config_name))
+        client_mixins = mixin_config.get("client")
+        if mixin_config.get("package") != "ai.derco.mixin" or not isinstance(client_mixins, list):
+            fail("runtime Mixin config has an unexpected package/client list")
+        if client_mixins.count("NoFriendDamageMixin") != 1:
+            fail("NoFriendDamageMixin must be registered exactly once in the client Mixin list")
         missing = sorted(PREFIX + ref for ref in refs if PREFIX + ref not in names)
         if missing:
             fail("registered resources absent from runtime JAR: " + ", ".join(missing))
@@ -101,7 +121,7 @@ def main() -> None:
 
     print(
         f"Verified {jars[0].name}: {len(refs)} registered texture paths, "
-        f"{len(generated)} original PNG assets, all PNG payloads valid, "
+        f"{len(generated)} original PNG assets, friend store/protection classes and Mixin registration, all PNG payloads valid, "
         f"Fabric icon={icon_path}"
     )
 

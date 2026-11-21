@@ -309,3 +309,15 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Inspected the packaged TitleScreenMixin bytecode: the init hook now returns unless the runtime screen class is the exact vanilla TitleScreen class, preventing the custom DercoVisualsMainMenuScreen from re-entering the automatic replacement path.
 - The crash reports supplied by the maintainer show the recursive constructor failure addressed by this guard. An in-game launch smoke test on the maintainer's client remains outstanding; successful CI compilation and static JAR checks do not prove runtime behavior on every modpack.
 - Published CI artifact for maintainer testing: run #44953297551. `main` and `pulse-src.zip` remain untouched.
+
+
+## 2026-11-22 — Persist friends locally and block attacks on friends
+
+- Assistant/tool: ChatGPT GPT-6 using the connected GitHub integration; implementation starts from the maintainer-supplied `DercoVisuals_patch_NoFriendDamage.zip`.
+- Reviewed the patch against the latest successful generated-source artifact. `FriendLookup.java` is supplied by the generated Pulse tree, but the existing `FriendsPanel` add/remove methods and plus-button handler were empty. Merely adding the submitted mixin would therefore leave the protection with no usable friends list.
+- Added `tools/apply_derco_layer.py`, which runs after `prepare_pulse_foundation.py`. It creates a local-only `FriendStore` at Fabric's `config/dercovisuals/friends.txt`, validates Java player names, de-duplicates names case-insensitively, loads saved names into the existing Friends tab, and makes the add/remove UI handlers persist changes. No network calls or telemetry are added.
+- Replaced the generated `FriendLookup` wrapper so all consumers query the local store. Added `NoFriendDamage` and a client Mixin that cancels the exact Yarn 1.21.11 `ClientPlayerInteractionManager.attackEntity(PlayerEntity, Entity)` method at HEAD when its target is a listed friend. Non-player targets and players not on the local list are left untouched.
+- Updated CI to apply the feature layer after source generation. Extended `tools/verify_derco_jar.py` to fail unless the friends/protection classes are packaged and `NoFriendDamageMixin` appears exactly once in the runtime client Mixin list.
+- Local validation before push: Python syntax check passed; the layer was applied twice to the latest generated-source artifact and remained idempotent; the friend UI no-op blocks were replaced; Mixin JSON remained valid and contained one registration.
+- Pending validation: Java 21 compile/remap/JAR verification in GitHub Actions, Mixin application and live in-game testing. This is client-side filtering of attacks initiated by this client; it is not server-side protection against every source of damage. The NoFriendDamage protection is always active through the client Mixin and is not yet represented as a visible PvP module card.
+- `main` and `pulse-src.zip` remain untouched.
