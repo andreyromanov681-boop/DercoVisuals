@@ -1262,6 +1262,12 @@ replace_generated_once(
 module_rows_path = java_root / 'ai' / 'derco' / 'gui' / 'modules' / 'ModuleRowRenderer.java'
 replace_generated_once(
     module_rows_path,
+    'import ai.derco.render.Renderer2D;\\n',
+    'import ai.derco.render.Renderer2D;\\nimport ai.derco.render.icons.IconTextureRegistry;\\n',
+    'module icon import'
+)
+replace_generated_once(
+    module_rows_path,
     '      if (fontRenderer != null) {\n'
     '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + 12.0F, f3 + f5 / 2.0F - 4.0F, textColor);\n'
     '      } else {\n'
