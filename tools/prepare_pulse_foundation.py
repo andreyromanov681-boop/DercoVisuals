@@ -1313,9 +1313,9 @@ patch_generated_java('ai/derco/gui/modules/ModulesTab.java', (
 
 # Rebuild module cards with a subtle navy gradient and animated electric-blue edge.
 patch_generated_java('ai/derco/gui/modules/ModuleRowRenderer.java', (
-    ('''      Color cardBorder = new Color(25, 25, 33);
+    ('''      Color cardBorder = new Color(16, 36, 60);
       renderer2D.a(f2 - 0.5F, f3 - 0.5F, f4 + 1.0F, f5 + 1.0F, 9.5F, cardBorder, cardBorder, cardBorder, cardBorder, MatrixStackVar);
-      Color cardBg = new Color(18, 18, 24);
+      Color cardBg = new Color(9, 20, 35);
       renderer2D.a(f2, f3, f4, f5, 9.5F, cardBg, cardBg, cardBg, cardBg, MatrixStackVar);''',
      '''      Color cardBorder = new Color(20, 76, 126, 118 + (int)(f6 * 120.0F));
       renderer2D.a(f2 - 0.5F, f3 - 0.5F, f4 + 1.0F, f5 + 1.0F, 9.5F, cardBorder, cardBorder, cardBorder, cardBorder, MatrixStackVar);
