@@ -292,3 +292,11 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Source change committed on \`pulse-foundation\` as \`3bbce9d4ef5a644600fcbd2ac073513701285447\` (generator correction). \`main\` and \`pulse-src.zip\` were not modified.
 - Verification status at handoff: source-generator CI build and in-game startup test are pending. Do not label a new JAR as fixed until the workflow completes successfully and the client has been smoke-tested.
 - Next action: inspect the Actions run for commit \`3bbce9d4ef5a644600fcbd2ac073513701285447\`; if source generation or compilation fails, fix the first confirmed failure before publishing a JAR.
+
+
+## 2026-11-21 — Correct Java type check in main-menu recursion guard
+
+- The first recursion-guard build correctly generated the updated Java but failed compilation because Java would not compare the Mixin getClass() result type directly to TitleScreen.class.
+- Corrected the generated guard to call getClass() through an Object cast: ((Object)this).getClass() != TitleScreen.class. This keeps exact-class matching (so subclasses such as DercoVisualsMainMenuScreen are skipped) and is valid Java for a Mixin class.
+- Generator correction committed as 2df58751ac446f249e913b6a93f9944a17710a0d.
+- Build for this corrected commit is pending. Do not distribute a new JAR until CI compile, remap, JAR verification, and artifact upload pass.
