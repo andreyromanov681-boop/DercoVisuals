@@ -411,6 +411,26 @@ patch_generated_java('ai/derco/media/MediaSessionService.java', (
      '      j = new AtomicReference<>(ZERO_LEVELS);'),
 ))
 
+# Bound hit-sound work to one reusable daemon worker. Clips play asynchronously after
+# opening, so the worker can start the next sound without blocking for the clip duration.
+patch_generated_java('ai/derco/audio/SoundPlayer.java', (
+    ('import java.util.Random;\\n',
+     'import java.util.Random;\\nimport java.util.concurrent.ArrayBlockingQueue;\\nimport java.util.concurrent.ThreadPoolExecutor;\\nimport java.util.concurrent.TimeUnit;\\n'),
+    ('private static final String[] MOAN_SOUNDS = new String[]{"moan1", "moan2", "moan3", "moan4"};',
+     'private static final String[] MOAN_SOUNDS = new String[]{"moan1", "moan2", "moan3", "moan4"};\\n'\n'
+     '   private static final ThreadPoolExecutor AUDIO_EXECUTOR = new ThreadPoolExecutor(\\n'\n'
+     '      1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(12),\\n'\n'
+     '      runnable -> {\\n'\n'
+     '         Thread worker = new Thread(runnable, "DercoVisuals Audio Worker");\\n'\n'
+     '         worker.setDaemon(true);\\n'\n'
+     '         return worker;\\n'\n'
+     '      }, new ThreadPoolExecutor.DiscardOldestPolicy()\\n'\n'
+     '   );'),
+    ('Thread thread = new Thread(() -> {', 'AUDIO_EXECUTOR.execute(() -> {'),
+    ('      }, "DercoVisuals Sound Player");\\n      thread.setDaemon(true);\\n      thread.start();',
+     '      });'),
+))
+
 # Restore collection element types lost by the upstream decompiler.
 patch_generated_java('ai/derco/discord/CosmeticHelper.java', (
     ('Map var7 = CosmeticRepository.a().b();',
