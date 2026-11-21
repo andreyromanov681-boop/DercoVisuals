@@ -405,8 +405,6 @@ patch_generated_java('ai/derco/media/MediaSessionService.java', (
      'j.set(ZERO_LEVELS);'),
     ('float[] fArr3 = new float[]{0.0F, 0.0F, 0.0F};\n            j.set(fArr3);',
      'j.set(ZERO_LEVELS);'),
-    ('float[] fArr = new float[]{0.0F, 0.0F, 0.0F};\n         j.set(fArr);',
-     'j.set(ZERO_LEVELS);'),
     ('float[] fArr2 = new float[]{\n            (fMin2 * 0.6F + f5 * 0.3F) * fSin,\n            (fMin2 * 0.85F + fMin * 0.3F + f5 * 0.5F) * fSin2,\n            (fMin2 * 0.5F + fMin * 0.7F + f5 * 0.7F) * fSin3,\n            (fMin3 * 0.5F + fMin * 0.7F + f5 * 0.7F) * fSin,\n            (fMin3 * 0.85F + fMin * 0.3F + f5 * 0.5F) * fSin3,\n            (fMin3 * 0.6F + f5 * 0.3F) * fSin2\n         };',
      'float[] fArr2 = this.v;\n         fArr2[0] = (fMin2 * 0.6F + f5 * 0.3F) * fSin;\n         fArr2[1] = (fMin2 * 0.85F + fMin * 0.3F + f5 * 0.5F) * fSin2;\n         fArr2[2] = (fMin2 * 0.5F + fMin * 0.7F + f5 * 0.7F) * fSin3;\n         fArr2[3] = (fMin3 * 0.5F + fMin * 0.7F + f5 * 0.7F) * fSin;\n         fArr2[4] = (fMin3 * 0.85F + fMin * 0.3F + f5 * 0.5F) * fSin3;\n         fArr2[5] = (fMin3 * 0.6F + f5 * 0.3F) * fSin2;'),
     ('      float[] fArr = new float[]{0.0F, 0.0F, 0.0F};\n      j = new AtomicReference<>(fArr);',
