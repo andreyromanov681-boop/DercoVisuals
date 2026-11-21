@@ -838,6 +838,18 @@ patch_generated_java('ai/derco/mixin/DrawContextMixin.java', (
      '@Inject(require = 0, method = "drawStackOverlay(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/item/ItemStack;IILjava/lang/String;)V", at = @At("HEAD"), cancellable = true)'),
 ))
 
+# InGameHud has two renderScoreboardSidebar overloads in Yarn 1.21.11:
+# the outer (DrawContext, RenderTickCounter) dispatcher and the inner
+# (DrawContext, ScoreboardObjective) renderer. These handlers use the objective,
+# so target only the inner overload instead of letting the name-only selector
+# bind the handler to the dispatcher and fail with an InvalidInjectionException.
+patch_generated_java('ai/derco/mixin/InGameHudMixin.java', (
+    ('@Inject(require = 0, method = "renderScoreboardSidebar", at = @At("HEAD"), cancellable = true)',
+     '@Inject(require = 0, method = "renderScoreboardSidebar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/scoreboard/ScoreboardObjective;)V", at = @At("HEAD"), cancellable = true)'),
+    ('@Inject(require = 0, method = "renderScoreboardSidebar", at = @At("TAIL"))',
+     '@Inject(require = 0, method = "renderScoreboardSidebar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/scoreboard/ScoreboardObjective;)V", at = @At("TAIL"))'),
+))
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.
