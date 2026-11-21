@@ -251,6 +251,24 @@ def patch_generated_java(relative_path, replacements):
         source = source.replace(old, new)
     path.write_text(source, encoding='utf-8')
 
+# Correct the ItemCooldownManager.Entry accessor against Yarn 1.21.11+build.3.
+# The decompiler emitted a hybrid target name and intermediary record component names;
+# the named target and fields below are the exact mapped names for this Minecraft version.
+patch_generated_java('ai/derco/mixin/accessor/ItemCooldownEntryAccessor.java', (
+    ('@Mixin(targets = "net/minecraft/ItemCooldownManager$class_1797")',
+     '@Mixin(targets = "net/minecraft/entity/player/ItemCooldownManager$Entry")'),
+    ('@Accessor("comp_3083")', '@Accessor("startTick")'),
+    ('@Accessor("comp_3084")', '@Accessor("endTick")'),
+))
+
+# TextMixin never reads the decompiler-emitted record field. Remove the unused
+# intermediary @Shadow instead of carrying an invalid named-namespace field target.
+patch_generated_java('ai/derco/mixin/TextMixin.java', (
+    ('import org.spongepowered.asm.mixin.Final;\\n', ''),
+    ('import org.spongepowered.asm.mixin.Shadow;\\n', ''),
+    ('   @Shadow\\n   @Final\\n   private String comp_737;\\n', ''),
+))
+
 # javac synthesizes $assertionsDisabled when compiling Java assert statements.
 # The decompiler also emitted a redundant copy of that field into FontManager.
 # Keep the real assert statement and remove only the unused decompiler artifact.

@@ -120,3 +120,12 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Added a fail-fast generator guard that rejects the tracker class reference and its Supabase endpoint/table markers if they reappear in generated Java.
 - Validation: applied the exact patch to the prior 436-file generated-source artifact before committing. GitHub Actions run [#44](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44878056739) on commit `e3a82d2e69118de98070a5b02383527151db4794` completed successfully: source generation produced 435 Java files, `compileJava`, `jar`, `remapJar`, `assemble`, and `build` passed under Java 21 / Gradle 9.2.1. The generated-source artifact contained no tracker class, Supabase URL, or tracker endpoint; the built JAR and sources JAR also contained no `DercoVisualsPlayerTracker` class. `compileTestJava` and `test` were `NO-SOURCE`, so automated Java test coverage remains absent. Loom emitted existing non-fatal remapping warnings and Gradle reported deprecation warnings. No in-game runtime smoke test was available.
 - Next: verify the new branch CI build and manually smoke-test player nameplate/tab icons in Minecraft 1.21.11.
+
+
+## 2026-11-21 — Repair ItemCooldownManager entry mixin mapping
+
+- Assistant/tool: ChatGPT scheduled bug-fix run.
+- Inspected the generated Java artifact from CI run [#44878293814](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44878293814) and confirmed that `ItemCooldownEntryAccessor` used the invalid hybrid target `net/minecraft/ItemCooldownManager$class_1797` plus intermediary record-component names `comp_3083` / `comp_3084`. Yarn 1.21.11+build.3 maps this record to `net/minecraft/entity/player/ItemCooldownManager$Entry`, with fields `startTick` and `endTick`.
+- Updated the source-of-truth generator to emit the correct named target and accessor field names. Also removed the unused intermediary `@Shadow comp_737` field from `TextMixin`, which generated a separate remapping warning and was never read by the mixin.
+- Validation before commit: applied the exact guarded patches to the generated Java artifact from run #44878293814; verified the expected target and named accessor fields and confirmed that the stale intermediary names were absent. Full CI for this change is pending; no local Minecraft runtime test was available.
+- Next: inspect the CI run triggered by this commit, confirm the Mixin annotation processor no longer reports the cooldown/text remapping warnings, then smoke-test the Cooldown Tracker in Minecraft 1.21.11.
