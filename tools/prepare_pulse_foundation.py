@@ -1139,6 +1139,481 @@ patch_generated_java('ai/derco/DercoVisuals.java', (
      '        });'),
 ))
 
+# Emit the reusable DercoVisuals theme API after all upstream rebranding and patches.
+# These classes are generated from this script, so generated src/main/java is never the
+# source of truth for the design system.
+theme_sources = {
+    'ThemeColors.java': r'''package ai.derco.theme;
+
+import java.util.Objects;
+
+/** Central ARGB design tokens for every DercoVisuals surface. */
+public final class ThemeColors {
+    public enum Token {
+        ACCENT, ACCENT_HOVER, ACCENT_PRESSED, ACCENT_SOFT,
+        SECONDARY, SECONDARY_SOFT,
+        BACKGROUND, SURFACE, SURFACE_ELEVATED, SURFACE_HOVER,
+        BORDER, BORDER_FOCUS,
+        TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED, TEXT_DISABLED,
+        SUCCESS, WARNING, ERROR
+    }
+
+    public static final int DEFAULT_ACCENT = 0xFF347BFA;
+    public static final int DEFAULT_SECONDARY = 0xFF39D9F2;
+
+    public static final int BACKGROUND = 0xFF080F20;
+    public static final int SURFACE = 0xFF0E1A32;
+    public static final int SURFACE_ELEVATED = 0xFF172746;
+    public static final int SURFACE_HOVER = 0xFF20385D;
+    public static final int BORDER = 0xFF2A4168;
+
+    public static final int TEXT_PRIMARY = 0xFFF4F7FF;
+    public static final int TEXT_SECONDARY = 0xFFC1D0EB;
+    public static final int TEXT_MUTED = 0xFF95A9CD;
+    public static final int TEXT_DISABLED = 0xFF91A5C7;
+
+    public static final int SUCCESS = 0xFF55D6A5;
+    public static final int WARNING = 0xFFFFC66D;
+    public static final int ERROR = 0xFFFF7188;
+
+    private ThemeColors() {
+    }
+
+    public static int resolve(Token token, ThemeSettings settings) {
+        Objects.requireNonNull(token, "token");
+        Objects.requireNonNull(settings, "settings");
+        return switch (token) {
+            case ACCENT -> settings.accentColor();
+            case ACCENT_HOVER -> blend(settings.accentColor(), 0xFFFFFFFF, 0.14f);
+            case ACCENT_PRESSED -> blend(settings.accentColor(), 0xFF000000, 0.16f);
+            case ACCENT_SOFT -> withAlpha(settings.accentColor(), 58);
+            case SECONDARY -> settings.secondaryColor();
+            case SECONDARY_SOFT -> withAlpha(settings.secondaryColor(), 48);
+            case BACKGROUND -> BACKGROUND;
+            case SURFACE -> SURFACE;
+            case SURFACE_ELEVATED -> SURFACE_ELEVATED;
+            case SURFACE_HOVER -> SURFACE_HOVER;
+            case BORDER -> BORDER;
+            case BORDER_FOCUS -> settings.accentColor();
+            case TEXT_PRIMARY -> TEXT_PRIMARY;
+            case TEXT_SECONDARY -> TEXT_SECONDARY;
+            case TEXT_MUTED -> TEXT_MUTED;
+            case TEXT_DISABLED -> TEXT_DISABLED;
+            case SUCCESS -> SUCCESS;
+            case WARNING -> WARNING;
+            case ERROR -> ERROR;
+        };
+    }
+
+    /** Linearly mixes two ARGB colors. Amount is clamped to [0, 1]. */
+    public static int blend(int from, int to, float amount) {
+        float t = clamp(amount, 0.0f, 1.0f);
+        int a = mixChannel((from >>> 24) & 0xFF, (to >>> 24) & 0xFF, t);
+        int r = mixChannel((from >>> 16) & 0xFF, (to >>> 16) & 0xFF, t);
+        int g = mixChannel((from >>> 8) & 0xFF, (to >>> 8) & 0xFF, t);
+        int b = mixChannel(from & 0xFF, to & 0xFF, t);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    public static int withAlpha(int argb, int alpha) {
+        return (clamp(alpha, 0, 255) << 24) | (argb & 0x00FFFFFF);
+    }
+
+    public static int opaque(int argb) {
+        return argb | 0xFF000000;
+    }
+
+    static float clamp(float value, float min, float max) {
+        if (!Float.isFinite(value)) return min;
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static int mixChannel(int from, int to, float amount) {
+        return Math.round(from + (to - from) * amount);
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+}
+''',
+    'ThemeSettings.java': r'''package ai.derco.theme;
+
+/**
+ * Immutable theme preferences. UI modules own their behavior; this object only
+ * describes shared presentation settings and can later be serialized by config code.
+ */
+public record ThemeSettings(
+    int accentColor,
+    int secondaryColor,
+    boolean reducedMotion,
+    float animationScale
+) {
+    public ThemeSettings {
+        accentColor = ThemeColors.opaque(accentColor);
+        secondaryColor = ThemeColors.opaque(secondaryColor);
+        animationScale = ThemeColors.clamp(animationScale, 0.0f, 4.0f);
+    }
+
+    public static ThemeSettings defaults() {
+        return new ThemeSettings(
+            ThemeColors.DEFAULT_ACCENT,
+            ThemeColors.DEFAULT_SECONDARY,
+            false,
+            1.0f
+        );
+    }
+
+    public ThemeSettings withAccentColor(int color) {
+        return new ThemeSettings(color, secondaryColor, reducedMotion, animationScale);
+    }
+
+    public ThemeSettings withSecondaryColor(int color) {
+        return new ThemeSettings(accentColor, color, reducedMotion, animationScale);
+    }
+
+    public ThemeSettings withReducedMotion(boolean enabled) {
+        return new ThemeSettings(accentColor, secondaryColor, enabled, animationScale);
+    }
+
+    public ThemeSettings withAnimationScale(float scale) {
+        return new ThemeSettings(accentColor, secondaryColor, reducedMotion, scale);
+    }
+}
+''',
+    'DercoTheme.java': r'''package ai.derco.theme;
+
+import java.util.Objects;
+
+/** Small, allocation-free facade shared by ClickGUI, HUD and future screens. */
+public final class DercoTheme {
+    private static volatile ThemeSettings settings = ThemeSettings.defaults();
+
+    private DercoTheme() {
+    }
+
+    public static ThemeSettings settings() {
+        return settings;
+    }
+
+    public static int color(ThemeColors.Token token) {
+        return ThemeColors.resolve(token, settings);
+    }
+
+    /** Atomically replaces the active immutable theme settings. */
+    public static synchronized void apply(ThemeSettings next) {
+        settings = Objects.requireNonNull(next, "next");
+    }
+
+    public static synchronized void setAccentColor(int argb) {
+        settings = settings.withAccentColor(argb);
+    }
+
+    public static synchronized void setSecondaryColor(int argb) {
+        settings = settings.withSecondaryColor(argb);
+    }
+
+    public static synchronized void reset() {
+        settings = ThemeSettings.defaults();
+    }
+
+    public static ThemeEffects.Shadow shadow(ThemeEffects.Elevation elevation) {
+        return ThemeEffects.forElevation(elevation);
+    }
+
+    public static float radius(ThemeMetrics.Corner corner) {
+        return ThemeMetrics.radius(corner);
+    }
+
+    public static int readableText(int background, int preferred) {
+        return ThemeContrast.readableTextOn(background, preferred);
+    }
+}
+''',
+    'ThemeMetrics.java': r'''package ai.derco.theme;
+
+/** Shared shape and spacing scale. Values are GUI pixels before UI scaling. */
+public final class ThemeMetrics {
+    public enum Corner {
+        NONE, EXTRA_SMALL, SMALL, MEDIUM, LARGE, EXTRA_LARGE, PILL
+    }
+
+    public static final int SPACE_1 = 4;
+    public static final int SPACE_2 = 8;
+    public static final int SPACE_3 = 12;
+    public static final int SPACE_4 = 16;
+    public static final int SPACE_5 = 20;
+    public static final int SPACE_6 = 24;
+
+    public static final int CONTROL_HEIGHT = 28;
+    public static final int ROW_HEIGHT = 32;
+    public static final int CARD_MIN_WIDTH = 148;
+
+    private ThemeMetrics() {
+    }
+
+    public static float radius(Corner corner) {
+        return switch (corner) {
+            case NONE -> 0.0f;
+            case EXTRA_SMALL -> 3.0f;
+            case SMALL -> 5.0f;
+            case MEDIUM -> 8.0f;
+            case LARGE -> 11.0f;
+            case EXTRA_LARGE -> 15.0f;
+            case PILL -> 999.0f;
+        };
+    }
+
+    /** Four-pixel spacing grid: spacing(3) returns 12 pixels. */
+    public static int spacing(int units) {
+        return Math.max(0, units) * SPACE_1;
+    }
+}
+''',
+    'ThemeEffects.java': r'''package ai.derco.theme;
+
+/** Renderer-independent shadow and glow descriptors. No blur buffers or threads are created. */
+public final class ThemeEffects {
+    public enum Elevation {
+        NONE, CARD, FLOATING, DIALOG, ACCENT_GLOW
+    }
+
+    public record Shadow(
+        float blurRadius,
+        float offsetX,
+        float offsetY,
+        int shadowColor,
+        int glowColor,
+        float glowStrength
+    ) {
+    }
+
+    private ThemeEffects() {
+    }
+
+    public static Shadow forElevation(Elevation elevation) {
+        return switch (elevation) {
+            case NONE -> new Shadow(0.0f, 0.0f, 0.0f, 0x00000000, 0x00000000, 0.0f);
+            case CARD -> new Shadow(8.0f, 0.0f, 3.0f, 0x70000000, 0x00000000, 0.0f);
+            case FLOATING -> new Shadow(13.0f, 0.0f, 5.0f, 0x99000000, 0x00000000, 0.0f);
+            case DIALOG -> new Shadow(18.0f, 0.0f, 8.0f, 0xB0000000, 0x00000000, 0.0f);
+            case ACCENT_GLOW -> new Shadow(
+                12.0f, 0.0f, 2.0f, 0x80000000,
+                DercoTheme.color(ThemeColors.Token.ACCENT), 0.22f
+            );
+        };
+    }
+}
+''',
+    'ThemeGradients.java': r'''package ai.derco.theme;
+
+/** Lightweight ARGB gradient math. Renderers remain responsible for drawing pixels. */
+public final class ThemeGradients {
+    public enum Axis {
+        HORIZONTAL, VERTICAL, DIAGONAL
+    }
+
+    public record Gradient(int startColor, int endColor, Axis axis) {
+        public int colorAt(float progress) {
+            return ThemeColors.blend(startColor, endColor, progress);
+        }
+    }
+
+    private ThemeGradients() {
+    }
+
+    public static Gradient horizontal(int start, int end) {
+        return new Gradient(start, end, Axis.HORIZONTAL);
+    }
+
+    public static Gradient vertical(int top, int bottom) {
+        return new Gradient(top, bottom, Axis.VERTICAL);
+    }
+
+    public static Gradient diagonal(int start, int end) {
+        return new Gradient(start, end, Axis.DIAGONAL);
+    }
+
+    public static Gradient accent() {
+        return horizontal(
+            DercoTheme.color(ThemeColors.Token.ACCENT),
+            DercoTheme.color(ThemeColors.Token.SECONDARY)
+        );
+    }
+
+    public static Gradient accentSoft() {
+        return horizontal(
+            DercoTheme.color(ThemeColors.Token.ACCENT_SOFT),
+            DercoTheme.color(ThemeColors.Token.SECONDARY_SOFT)
+        );
+    }
+
+    public static int sample(int start, int end, float progress) {
+        return ThemeColors.blend(start, end, progress);
+    }
+}
+''',
+    'ThemeAnimation.java': r'''package ai.derco.theme;
+
+/** Frame-driven animation helpers. Pass the renderer's frame delta; no timer or thread is used. */
+public final class ThemeAnimation {
+    public enum Easing {
+        LINEAR, EASE_OUT_CUBIC, EASE_IN_OUT_CUBIC
+    }
+
+    private ThemeAnimation() {
+    }
+
+    public static float ease(Easing easing, float progress) {
+        float t = ThemeColors.clamp(progress, 0.0f, 1.0f);
+        return switch (easing) {
+            case LINEAR -> t;
+            case EASE_OUT_CUBIC -> 1.0f - (float) Math.pow(1.0f - t, 3.0);
+            case EASE_IN_OUT_CUBIC -> t < 0.5f
+                ? 4.0f * t * t * t
+                : 1.0f - (float) Math.pow(-2.0f * t + 2.0f, 3.0) / 2.0f;
+        };
+    }
+
+    public static float progress(float elapsedSeconds, float durationSeconds) {
+        ThemeSettings settings = DercoTheme.settings();
+        if (settings.reducedMotion() || settings.animationScale() == 0.0f) return 1.0f;
+        float duration = Math.max(0.001f, durationSeconds * settings.animationScale());
+        return ThemeColors.clamp(elapsedSeconds / duration, 0.0f, 1.0f);
+    }
+
+    public static float lerp(float from, float to, float progress) {
+        float t = ThemeColors.clamp(progress, 0.0f, 1.0f);
+        return from + (to - from) * t;
+    }
+
+    /** Per-widget animation state. Call update once per frame and reuse the instance. */
+    public static final class AnimatedFloat {
+        private float value;
+
+        public AnimatedFloat(float initialValue) {
+            this.value = initialValue;
+        }
+
+        public float value() {
+            return value;
+        }
+
+        public void snapTo(float nextValue) {
+            value = nextValue;
+        }
+
+        public float update(float target, float deltaSeconds, float durationSeconds) {
+            ThemeSettings settings = DercoTheme.settings();
+            if (settings.reducedMotion() || settings.animationScale() == 0.0f) {
+                value = target;
+                return value;
+            }
+
+            float delta = ThemeColors.clamp(deltaSeconds, 0.0f, 0.1f);
+            float duration = Math.max(0.001f, durationSeconds * settings.animationScale());
+            float blend = 1.0f - (float) Math.exp(-delta * 8.0f / duration);
+            value = lerp(value, target, blend);
+            if (Math.abs(value - target) < 0.0005f) value = target;
+            return value;
+        }
+    }
+}
+''',
+    'ThemeContrast.java': r'''package ai.derco.theme;
+
+/** WCAG relative-luminance and text-contrast helpers for ARGB colors. */
+public final class ThemeContrast {
+    public static final double WCAG_AA_NORMAL_TEXT = 4.5;
+    public static final double WCAG_AA_LARGE_TEXT = 3.0;
+
+    private ThemeContrast() {
+    }
+
+    public static double ratio(int foreground, int background) {
+        int opaqueForeground = composite(foreground, background);
+        double first = luminance(opaqueForeground);
+        double second = luminance(background | 0xFF000000);
+        return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+    }
+
+    public static boolean meetsWcagAA(int foreground, int background) {
+        return ratio(foreground, background) >= WCAG_AA_NORMAL_TEXT;
+    }
+
+    public static boolean meetsWcagAALargeText(int foreground, int background) {
+        return ratio(foreground, background) >= WCAG_AA_LARGE_TEXT;
+    }
+
+    /** Keeps the preferred color when accessible, otherwise selects the stronger neutral. */
+    public static int readableTextOn(int background, int preferred) {
+        if (meetsWcagAA(preferred, background)) return preferred;
+        int light = ThemeColors.TEXT_PRIMARY;
+        int dark = 0xFF080F20;
+        return ratio(light, background) >= ratio(dark, background) ? light : dark;
+    }
+
+    /** Verifies the built-in text tokens against every standard dark surface. */
+    public static boolean defaultPalettePasses() {
+        int[] surfaces = {
+            ThemeColors.BACKGROUND,
+            ThemeColors.SURFACE,
+            ThemeColors.SURFACE_ELEVATED,
+            ThemeColors.SURFACE_HOVER
+        };
+        int[] textColors = {
+            ThemeColors.TEXT_PRIMARY,
+            ThemeColors.TEXT_SECONDARY,
+            ThemeColors.TEXT_MUTED,
+            ThemeColors.TEXT_DISABLED
+        };
+        for (int surface : surfaces) {
+            for (int text : textColors) {
+                if (!meetsWcagAA(text, surface)) return false;
+            }
+        }
+        return true;
+    }
+
+    private static double luminance(int color) {
+        double red = linear(((color >>> 16) & 0xFF) / 255.0);
+        double green = linear(((color >>> 8) & 0xFF) / 255.0);
+        double blue = linear((color & 0xFF) / 255.0);
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    }
+
+    private static double linear(double channel) {
+        return channel <= 0.04045
+            ? channel / 12.92
+            : Math.pow((channel + 0.055) / 1.055, 2.4);
+    }
+
+    private static int composite(int foreground, int background) {
+        int alpha = (foreground >>> 24) & 0xFF;
+        if (alpha == 255) return foreground;
+        double a = alpha / 255.0;
+        int red = mix((foreground >>> 16) & 0xFF, (background >>> 16) & 0xFF, a);
+        int green = mix((foreground >>> 8) & 0xFF, (background >>> 8) & 0xFF, a);
+        int blue = mix(foreground & 0xFF, background & 0xFF, a);
+        return 0xFF000000 | (red << 16) | (green << 8) | blue;
+    }
+
+    private static int mix(int foreground, int background, double alpha) {
+        return (int) Math.round(foreground * alpha + background * (1.0 - alpha));
+    }
+}
+'''
+}
+
+theme_root = java_root / 'ai' / 'derco' / 'theme'
+theme_root.mkdir(parents=True, exist_ok=True)
+for theme_name, theme_source in theme_sources.items():
+    (theme_root / theme_name).write_text(theme_source.strip() + '\n', encoding='utf-8')
+
+expected_theme_files = tuple(theme_root / name for name in theme_sources)
+if len(expected_theme_files) != 8 or any(not path.is_file() for path in expected_theme_files):
+    raise SystemExit('DercoVisuals theme API generation was incomplete')
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.
