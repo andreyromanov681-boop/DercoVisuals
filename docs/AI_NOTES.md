@@ -281,3 +281,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - No in-game Minecraft client benchmark or runtime smoke test was performed, and no FPS/RAM percentage improvement is claimed. The optimizations are grounded in source-level allocation/thread audit, not a measured performance profile.
 - The user's Windows laptop log still showed a native memory commit failure while using -Xmx7040m and -XX:+AlwaysPreTouch with only about 5.5 GiB available at launch. The recommended local launcher settings remain -Xmx4096m and removing -XX:+AlwaysPreTouch plus custom ZGC flags; source optimizations do not replace adequate OS commit/page-file headroom.
 - pulse-foundation now includes the shared electric-blue palette and these source-level performance changes. main and pulse-src.zip remain untouched.
+
+
+## 2026-11-21 — Fix recursive DercoVisuals main-menu initialization
+
+- Assistant/tool: ChatGPT GPT-6 using the connected GitHub integration.
+- Reviewed the three crash reports and latest client log supplied by the maintainer. All three crashes show the same \`StackOverflowError\` loop: \`DercoVisualsMainMenuScreen.<init>\` triggers the TitleScreen \`onInitHead\` mixin again, which creates another \`DercoVisualsMainMenuScreen\` and repeats.
+- Updated the source-of-truth generator \`tools/prepare_pulse_foundation.py\`. The generated \`TitleScreenMixin.onInitHead\` now returns immediately unless the current instance is the exact vanilla \`TitleScreen\` class. The DercoVisuals replacement screen extends TitleScreen, so its own initialization no longer triggers another replacement. The original vanilla menu is still replaced normally.
+- The uploaded \`fabric-1.21.11-2-80d4.zip\` contains crash reports and logs only; it does not contain the installed DercoVisuals JAR or editable project sources.
+- Source change committed on \`pulse-foundation\` as \`3bbce9d4ef5a644600fcbd2ac073513701285447\` (generator correction). \`main\` and \`pulse-src.zip\` were not modified.
+- Verification status at handoff: source-generator CI build and in-game startup test are pending. Do not label a new JAR as fixed until the workflow completes successfully and the client has been smoke-tested.
+- Next action: inspect the Actions run for commit \`3bbce9d4ef5a644600fcbd2ac073513701285447\`; if source generation or compilation fails, fix the first confirmed failure before publishing a JAR.
