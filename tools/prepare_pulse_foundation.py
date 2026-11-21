@@ -288,6 +288,18 @@ if '$assertionsDisabled' in font_manager_source:
     raise SystemExit('FontManager assertion migration left a reference to the removed decompiler field')
 font_manager_path.write_text(font_manager_source, encoding='utf-8')
 
+# The embedded icon-font files use the DercoVisuals resource names in the archive.
+# The original decompiled FontManager still asked for the old Pulse filenames, causing
+# Font.createFont(null) to throw IOException during class initialization on game startup.
+patch_generated_java('ai/derco/render/font/FontManager.java', (
+    ('load(i4, "dercoicon.ttf")', 'load(i4, "dercovisualsicon.ttf")'),
+    ('load(i5, "derco_icons.ttf")', 'load(i5, "dercovisuals_icons.ttf")'),
+    ('throw new RuntimeException(e2);',
+     'System.err.println("[DercoVisuals] Could not load font resource " + str + ": " + e2.getMessage() + "; using SansSerif fallback.");\\n'
+     '         Font fallbackFont = new Font(Font.SANS_SERIF, Font.PLAIN, 1).deriveFont(Font.PLAIN, f / 2.0F);\\n'
+     '         return new FontRenderer(fallbackFont, f / 2.0F);'),
+))
+
 # Restore collection element types lost by the upstream decompiler.
 patch_generated_java('ai/derco/discord/CosmeticHelper.java', (
     ('Map var7 = CosmeticRepository.a().b();',
@@ -1145,6 +1157,16 @@ if generated_metadata.get('version') != chr(36) + '{version}':
 icon_path = generated_metadata.get('icon')
 if not icon_path or not (SRC / 'resources' / icon_path).is_file():
     raise SystemExit(f'fabric.mod.json icon resource is missing: {icon_path}')
+font_resource_dir = SRC / 'resources' / 'assets' / 'dercovisuals' / 'font'
+for font_name in (
+    'sfprodisplayregular.ttf',
+    'sfprodisplay-medium-test.ttf',
+    'icons.ttf',
+    'dercovisualsicon.ttf',
+    'dercovisuals_icons.ttf',
+):
+    if not (font_resource_dir / font_name).is_file():
+        raise SystemExit(f'Required FontManager resource is missing: {font_name}')
 generated_mixin_config = json.loads(mixin_config_path.read_text(encoding='utf-8'))
 mixin_source_root = java_root / 'ai' / 'derco' / 'mixin'
 for mixin_name in (*generated_mixin_config.get('mixins', []), *generated_mixin_config.get('client', [])):
