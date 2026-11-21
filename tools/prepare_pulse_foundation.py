@@ -414,21 +414,26 @@ patch_generated_java('ai/derco/media/MediaSessionService.java', (
 # Bound hit-sound work to one reusable daemon worker. Clips play asynchronously after
 # opening, so the worker can start the next sound without blocking for the clip duration.
 patch_generated_java('ai/derco/audio/SoundPlayer.java', (
-    ('import java.util.Random;\\n',
-     'import java.util.Random;\\nimport java.util.concurrent.ArrayBlockingQueue;\\nimport java.util.concurrent.ThreadPoolExecutor;\\nimport java.util.concurrent.TimeUnit;\\n'),
-    ('private static final String[] MOAN_SOUNDS = new String[]{"moan1", "moan2", "moan3", "moan4"};',
-     'private static final String[] MOAN_SOUNDS = new String[]{"moan1", "moan2", "moan3", "moan4"};\\n'\n'
-     '   private static final ThreadPoolExecutor AUDIO_EXECUTOR = new ThreadPoolExecutor(\\n'\n'
-     '      1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(12),\\n'\n'
-     '      runnable -> {\\n'\n'
-     '         Thread worker = new Thread(runnable, "DercoVisuals Audio Worker");\\n'\n'
-     '         worker.setDaemon(true);\\n'\n'
-     '         return worker;\\n'\n'
-     '      }, new ThreadPoolExecutor.DiscardOldestPolicy()\\n'\n'
-     '   );'),
-    ('Thread thread = new Thread(() -> {', 'AUDIO_EXECUTOR.execute(() -> {'),
-    ('      }, "DercoVisuals Sound Player");\\n      thread.setDaemon(true);\\n      thread.start();',
-     '      });'),
+    ('''import java.util.Random;''',
+     '''import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;'''),
+    ('''private static final String[] MOAN_SOUNDS = new String[]{"moan1", "moan2", "moan3", "moan4"};''',
+     '''private static final String[] MOAN_SOUNDS = new String[]{"moan1", "moan2", "moan3", "moan4"};
+   private static final ThreadPoolExecutor AUDIO_EXECUTOR = new ThreadPoolExecutor(
+      1, 1, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(12),
+      runnable -> {
+         Thread worker = new Thread(runnable, "DercoVisuals Audio Worker");
+         worker.setDaemon(true);
+         return worker;
+      },
+      new ThreadPoolExecutor.DiscardOldestPolicy()
+   );'''),
+    ('''Thread thread = new Thread(() -> {''', '''AUDIO_EXECUTOR.execute(() -> {'''),
+    ('''      }, "DercoVisuals Sound Player");
+      thread.setDaemon(true);
+      thread.start();''', '''      });'''),
 ))
 
 # Restore collection element types lost by the upstream decompiler.
