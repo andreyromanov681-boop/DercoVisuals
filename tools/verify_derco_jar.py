@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+import hashlib
 from pathlib import Path
 from zipfile import ZipFile
 import json
@@ -75,14 +76,28 @@ def main() -> None:
         icon_path = metadata.get("icon")
         if not isinstance(icon_path, str) or icon_path not in names:
             fail(f"Fabric metadata icon does not resolve inside the JAR: {icon_path!r}")
+        if icon_path != PREFIX + "textures/icon.png":
+            fail(f"Fabric metadata icon points to an unexpected path: {icon_path!r}")
 
-        for path in sorted(PREFIX + item for item in generated):
+        for relative in sorted(refs | generated):
+            path = PREFIX + relative
             try:
                 data = jar.read(path)
                 with Image.open(BytesIO(data)) as image:
+                    if image.format != "PNG" or image.width < 1 or image.height < 1:
+                        fail(f"resource is not a non-empty PNG: {path}")
                     image.verify()
             except Exception as exc:  # Pillow raises several format-specific exceptions.
                 fail(f"invalid PNG resource {path}: {exc}")
+
+        generated_hashes = {}
+        for relative in sorted(generated):
+            digest = hashlib.sha256(jar.read(PREFIX + relative)).hexdigest()
+            if digest in generated_hashes:
+                fail(
+                    f"duplicate generated PNGs: {generated_hashes[digest]} and {relative}"
+                )
+            generated_hashes[digest] = relative
 
     print(
         f"Verified {jars[0].name}: {len(refs)} registered texture paths, "
