@@ -301,6 +301,36 @@ patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
     ('private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList arrayList = new ArrayList();',
      'private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList<PotionsHudElement.EffectEntry> arrayList = new ArrayList<>();'),
 ))
+patch_generated_java('ai/derco/modules/hud/PotionsHud.java', (
+    ('   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);\n\n   public PotionsHud() {',
+     '''   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);
+   private final SliderSetting maxVisibleEffects = new SliderSetting(
+      "Макс. эффектов", "Количество активных эффектов, одновременно отображаемых в HUD.", 6.0F, 1.0F, 12.0F, 1.0F
+   );
+
+   public PotionsHud() {'''),
+    ('   public SliderSetting n() {\n      return this.scale;\n   }\n}',
+     '''   public SliderSetting n() {
+      return this.scale;
+   }
+
+   public int maxVisibleEffects() {
+      return this.maxVisibleEffects.roundedInt();
+   }
+}'''),
+))
+patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
+    ('      arrayList.sort(Comparator.comparingInt(effectEntry -> effectEntry.d));\n      return arrayList;',
+     '''      arrayList.sort(Comparator.comparingInt(effectEntry -> effectEntry.d));
+      PotionsHud potionsHud = ModuleRegistry.POTIONS_HUD;
+      if (potionsHud != null) {
+         int maxVisibleEffects = potionsHud.maxVisibleEffects();
+         if (arrayList.size() > maxVisibleEffects) {
+            arrayList.subList(maxVisibleEffects, arrayList.size()).clear();
+         }
+      }
+      return arrayList;'''),
+))
 patch_generated_java('ai/derco/gui/settings/ModeSettingWidget.java', (
     ('ArrayList arrayList = new ArrayList<>(this.v);',
      'ArrayList<Integer> arrayList = new ArrayList<>(this.v);'),

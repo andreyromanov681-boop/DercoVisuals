@@ -170,3 +170,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Source-of-truth change: `tools/prepare_pulse_foundation.py`; no generated output or original `pulse-src.zip` was manually edited.
 - CI/build and remapped JAR inspection are pending. A successful build does not prove the user's full modpack runtime starts; the next launch log remains the runtime check.
 - Next: verify CI artifact and remapped Mixin target, send the JAR, then inspect any subsequent DercoVisuals Mixin error from the user's next launch.
+
+
+## 2026-11-21 — Configurable potion HUD effect limit
+
+- Assistant/tool: ChatGPT scheduled feature run.
+- Inspected the generated Java sources from the latest successful `pulse-foundation` CI artifact and confirmed that the Potions HUD displayed every active status effect without a user-configurable cap. The effects are already sorted by remaining duration, so the soonest-expiring effects can be kept visible first.
+- Added a `Макс. эффектов` slider to the Potions HUD module: default 6, minimum 1, maximum 12, step 1. The module's existing settings collector and local config serializer automatically include the new setting.
+- Updated the source-of-truth generator so `PotionsHudElement` trims the sorted active-effect list to the configured limit. Existing entry animations handle effects entering and leaving the visible list.
+- Validation before commit: applied the exact patch anchors to the current CI-generated source artifact; verified both anchors match exactly once, the existing imports are present, and the setting is collected by the module constructor. The current baseline CI run [#54](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44903107708) passed under Java 21 / Gradle 9.2.1. The new commit's CI result is pending.
+- Limitations: this environment cannot launch the Minecraft client for an in-game GUI/persistence smoke test. The repository currently has no Java test sources (`test` is `NO-SOURCE`).
+- Next: verify the new setting in the in-game Potions HUD settings panel, confirm its value persists after restart, and continue with the next independent visual improvement.
