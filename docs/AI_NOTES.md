@@ -206,3 +206,17 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 
 
 - Follow-up correction (2026-11-21): inspection of the committed generator caught over-escaped newline tokens in the newly added hitbox source replacement strings. Corrected the Python literals so they match actual Java source line breaks; the initial in-memory source transformation had been checked, but the serialized generator representation also needed this fix. The replacement CI run is authoritative.
+
+
+## 2026-11-21 — Add opt-in Pastebin crash-log upload
+
+- Assistant/tool: ChatGPT maintenance session after user requested automatic upload of the previous Minecraft \`latest.log\` following a crash.
+- Added \`ai.derco.crash.CrashLogBootstrap\` through the source-of-truth generator \`tools/prepare_pulse_foundation.py\` and registered it as a Fabric \`preLaunch\` entrypoint. Fabric calls this entrypoint shortly before the game starts, allowing a session marker and shutdown snapshot hook to exist before main/client initialization and early Mixin application.
+- The bootstrap writes \`config/dercovisuals-session-active\`; the normal Fabric \`CLIENT_STOPPING\` callback removes it. If the marker remains on the next launch, the previous run is treated as an unexpected exit and the last \`logs/latest.log\` is snapshotted into a local queue. A JVM shutdown hook makes a best-effort snapshot before process exit. This is intended to catch early startup failures after preLaunch as well as later crashes; forced termination may still prevent the shutdown hook from running.
+- Added local-only \`config/dercovisuals-crash-upload.properties\` with \`enabled=true\` and a blank \`apiDevKey\`. No user API key or other credential is embedded in source, build metadata, or the JAR. Upload occurs only after the user locally supplies a Pastebin Developer API key; setting \`enabled=false\` disables it.
+- Upload sends the saved log to the official Pastebin API as an **unlisted** paste (\`api_paste_private=1\)) with a one-week expiry. Unlisted means anyone with the resulting URL can read it. Before snapshotting, the uploader caps each file at the last 2 MiB, replaces the local home directory / username, and redacts common bearer tokens, API keys, passwords, and secrets. Up to five queued crash logs are retained; successful uploads delete their local queue entry and save the latest URL to \`config/dercovisuals-last-crash-paste.txt\`. Failed uploads keep the file for retry. Upload runs on a daemon thread with network timeouts, so it does not block game startup.
+- The user's supplied Developer API key was deliberately not copied into the repository or artifact because it is a credential. The user should rotate it before adding a fresh key to the local config file.
+- The user also referred to a crash log, but no new log attachment was present in conversation files; the supplied Pastebin raw URL could not be retrieved by available web access. Therefore no crash diagnosis was claimed in this change.
+- CI and source/JAR verification are pending. No in-game runtime test is available in this environment.
+- Next: inspect generator output and build result; verify the preLaunch metadata and uploader class inside the remapped JAR; document the exact local config path and verify upload response parsing.
+
