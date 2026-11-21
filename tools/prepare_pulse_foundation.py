@@ -6,7 +6,7 @@ rebranded working tree for the DercoVisuals build; it never edits the archive.
 """
 from pathlib import Path
 from zipfile import ZipFile
-import json, re, shutil, sys
+import json, re, shutil, sys, runpy
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / 'pulse-src.zip'
@@ -609,7 +609,7 @@ metadata = json.loads(meta.read_text(encoding='utf-8'))
 metadata.update({
     'id': 'dercovisuals', 'name': 'DercoVisuals',
     'version': '${version}',
-    'icon': 'assets/dercovisuals/textures/logo.png',
+    'icon': 'assets/dercovisuals/textures/icon.png',
     'description': 'A free, modular, client-side visual suite for Minecraft 1.21.11.',
     'authors': ['enizer6569'], 'license': 'LicenseRef-DercoVisuals-Community',
     'environment': 'client',
@@ -667,6 +667,29 @@ for p in sorted((SRC / 'resources').rglob('*'), key=lambda item: len(item.parts)
             raise SystemExit(f'Resource rename would overwrite {target.relative_to(ROOT)}')
         p.rename(target)
 
+
+# Generate the original DercoVisuals illustrations inside tools/assets, then copy the
+# PNG source files into the final Minecraft namespace. The upstream archive is untouched.
+ASSET_SCRIPT = ROOT / 'tools' / 'assets' / 'generate_derco_assets.py'
+if not ASSET_SCRIPT.is_file():
+    raise SystemExit(f'Missing DercoVisuals artwork source: {ASSET_SCRIPT}')
+runpy.run_path(str(ASSET_SCRIPT), run_name='__main__')
+ASSET_SOURCE_ROOT = ROOT / 'tools' / 'assets' / 'png'
+asset_manifest_path = ASSET_SOURCE_ROOT / 'asset-manifest.json'
+if not asset_manifest_path.is_file():
+    raise SystemExit('DercoVisuals artwork generator did not create asset-manifest.json')
+asset_manifest = json.loads(asset_manifest_path.read_text(encoding='utf-8'))
+asset_paths = [asset for group in asset_manifest.values() for asset in group]
+if len(asset_paths) != 42 or len(set(asset_paths)) != 42:
+    raise SystemExit(f'Expected 42 distinct DercoVisuals assets; manifest declares {len(asset_paths)}')
+asset_resource_root = SRC / 'resources' / 'assets' / 'dercovisuals'
+for relative_asset in asset_paths:
+    source_asset = ASSET_SOURCE_ROOT / relative_asset
+    if not source_asset.is_file() or source_asset.stat().st_size == 0:
+        raise SystemExit(f'DercoVisuals source PNG is missing or empty: {relative_asset}')
+    destination_asset = asset_resource_root / relative_asset
+    destination_asset.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_asset, destination_asset)
 
 # Re-target visual hooks to the Minecraft 1.21.11 Yarn API.
 # These changes are applied to generated sources so every CI build and local
@@ -1614,6 +1637,757 @@ expected_theme_files = tuple(theme_root / name for name in theme_sources)
 if len(expected_theme_files) != 8 or any(not path.is_file() for path in expected_theme_files):
     raise SystemExit('DercoVisuals theme API generation was incomplete')
 
+# DercoVisuals HUD visual system. Keep all feature logic in its original HUD classes;
+# this palette only standardizes surfaces, text, borders, and blue/cyan accents.
+hud_theme_path = java_root / 'ai' / 'derco' / 'hud' / 'core' / 'HudTheme.java'
+hud_theme_path.parent.mkdir(parents=True, exist_ok=True)
+hud_theme_path.write_text(r'''package ai.derco.hud.core;
+
+import java.awt.Color;
+
+/** Shared restrained navy / blue HUD palette for all DercoVisuals overlays. */
+public final class HudTheme {
+    public static final Color BACKGROUND_TOP = new Color(10, 24, 42, 238);
+    public static final Color BACKGROUND_BOTTOM = new Color(5, 15, 28, 242);
+    public static final Color PANEL = new Color(9, 25, 42, 218);
+    public static final Color SURFACE = new Color(14, 33, 54, 242);
+    public static final Color SURFACE_RAISED = new Color(19, 43, 68, 242);
+    public static final Color SURFACE_DEEP = new Color(6, 17, 30, 242);
+    public static final Color SLOT_BG = new Color(5, 17, 31, 188);
+    public static final Color BORDER = new Color(48, 104, 148, 112);
+    public static final Color SLOT_BORDER = new Color(49, 105, 148, 96);
+    public static final Color TEXT = new Color(244, 249, 255, 255);
+    public static final Color MUTED = new Color(178, 202, 223, 245);
+    public static final Color ACCENT = new Color(53, 185, 255, 255);
+    public static final Color ACCENT_DARK = new Color(22, 112, 190, 255);
+    public static final Color ACCENT_GLOW = new Color(53, 185, 255, 58);
+    public static final Color GUIDE = new Color(53, 185, 255, 190);
+    public static final Color GUIDE_CENTER = new Color(22, 112, 190, 190);
+    public static final Color GUIDE_EDGE = new Color(105, 219, 255, 190);
+
+    private HudTheme() { }
+
+    public static Color withAlpha(Color color, float alpha) {
+        float clamped = Math.max(0.0F, Math.min(1.0F, alpha));
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(),
+            Math.max(0, Math.min(255, Math.round(color.getAlpha() * clamped))));
+    }
+}
+''', encoding='utf-8')
+
+patch_generated_java('ai/derco/hud/core/HudElement.java', (
+    ('new Color(130, 105, 255, (int)(25.0F * fH))',
+     'ai.derco.hud.core.HudTheme.withAlpha(ai.derco.hud.core.HudTheme.ACCENT_GLOW, fH)'),
+))
+
+patch_generated_java('ai/derco/hud/core/HudElementManager.java', (
+    ('private static final Color m = new Color(100, 180, 255, 180);',
+     'private static final Color m = ai.derco.hud.core.HudTheme.GUIDE;'),
+    ('private static final Color n = new Color(200, 100, 255, 180);',
+     'private static final Color n = ai.derco.hud.core.HudTheme.GUIDE_CENTER;'),
+    ('private static final Color o = new Color(255, 150, 80, 180);',
+     'private static final Color o = ai.derco.hud.core.HudTheme.GUIDE_EDGE;'),
+    ('this.f = new HotkeysHudElement(10.0F, 110.0F);',
+     'this.f = new HotkeysHudElement(10.0F, 238.0F);'),
+    ('this.g = new CooldownsHudElement(Math.max(10.0F, width - 130.0F), 10.0F);',
+     'this.g = new CooldownsHudElement(Math.max(10.0F, width - 142.0F), 10.0F);'),
+    ('this.h = new TargetHudElement(Math.max(10.0F, (width - 130.0F) / 2.0F), Math.max(10.0F, height - 61.0F));',
+     'this.h = new TargetHudElement(Math.max(10.0F, width - 142.0F), Math.max(10.0F, height - 64.0F));'),
+    ('this.saturationHud = new SaturationHudElement(width / 2.0F + 10.0F, Math.max(10.0F, height - 49.0F));',
+     'this.saturationHud = new SaturationHudElement(Math.max(10.0F, width / 2.0F - 91.0F), Math.max(10.0F, height - 49.0F));'),
+    ('this.inventoryHud = new InventoryHudElement(Math.max(10.0F, (width - 226.0F) / 2.0F), Math.max(10.0F, height - 145.0F));',
+     'this.inventoryHud = new InventoryHudElement(10.0F, Math.max(10.0F, height - 92.0F));'),
+    ('this.scoreboardHud = new ScoreboardHudElement(Math.max(10.0F, width - 130.0F), Math.max(10.0F, (height - 80.0F) / 2.0F));',
+     'this.scoreboardHud = new ScoreboardHudElement(Math.max(10.0F, width - 142.0F), Math.max(10.0F, (height - 80.0F) / 2.0F));'),
+))
+
+patch_generated_java('ai/derco/hud/elements/WatermarkHudElement.java', (
+    ('private static final Color CARD_TOP = new Color(15, 15, 26, 232);',
+     'private static final Color CARD_TOP = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color CARD_BOTTOM = new Color(9, 9, 18, 236);',
+     'private static final Color CARD_BOTTOM = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('withAlpha(new Color(130, 95, 255), 1.0F)',
+     'withAlpha(ai.derco.hud.core.HudTheme.ACCENT, 1.0F)'),
+))
+
+patch_generated_java('ai/derco/hud/elements/TargetHudElement.java', (
+    ('private static final Color BACKGROUND = new Color(15, 15, 18, 245);',
+     'private static final Color BACKGROUND = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color HEALTH_TEXT = new Color(182, 182, 191, 245);',
+     'private static final Color HEALTH_TEXT = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color BAR_BACKGROUND = new Color(21, 18, 28, 245);',
+     'private static final Color BAR_BACKGROUND = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color BAR_COLOR = new Color(95, 65, 240, 255);',
+     'private static final Color BAR_COLOR = ai.derco.hud.core.HudTheme.ACCENT;'),
+    ('private static final Color BAR_GLOW = new Color(95, 65, 240, 60);',
+     'private static final Color BAR_GLOW = ai.derco.hud.core.HudTheme.ACCENT_GLOW;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/InventoryHudElement.java', (
+    ('private static final Color OVERALL_BG_COLOR = new Color(25, 27, 32, 110);',
+     'private static final Color OVERALL_BG_COLOR = ai.derco.hud.core.HudTheme.PANEL;'),
+    ('private static final Color OVERALL_BORDER_COLOR = new Color(40, 45, 55, 90);',
+     'private static final Color OVERALL_BORDER_COLOR = ai.derco.hud.core.HudTheme.BORDER;'),
+    ('private static final Color SLOT_BG_COLOR = new Color(5, 5, 5, 91);',
+     'private static final Color SLOT_BG_COLOR = ai.derco.hud.core.HudTheme.SLOT_BG;'),
+    ('private static final Color SLOT_BORDER_COLOR = new Color(40, 45, 55, 80);',
+     'private static final Color SLOT_BORDER_COLOR = ai.derco.hud.core.HudTheme.SLOT_BORDER;'),
+    ('renderer2D.a(this.b, this.c, this.d, this.e, 4.0F * fScale, cBg, MatrixStackVar);',
+     'renderer2D.a(this.b, this.c, this.d, this.e, 4.0F * fScale, cBg, MatrixStackVar);\n'
+     '               renderer2D.a(this.b, this.c, this.d, 1.0F * fScale, 0.0F,\n'
+     '                  ai.derco.hud.core.HudTheme.withAlpha(ai.derco.hud.core.HudTheme.ACCENT, 0.42F * fAlpha), MatrixStackVar);'),
+))
+
+patch_generated_java('ai/derco/hud/elements/TotemsHudElement.java', (
+    ('float fScale = this.scale();\n'
+     '               Matrix3x2fStack matrices = currentDrawContext.getMatrices();',
+     'float fScale = this.scale();\n'
+     '               renderer2D.a(this.b, this.c, this.d, this.e, 3.0F * fScale,\n'
+     '                  ai.derco.hud.core.HudTheme.PANEL, MatrixStackVar);\n'
+     '               renderer2D.a(this.b, this.c, this.d, 1.0F * fScale, 0.0F,\n'
+     '                  ai.derco.hud.core.HudTheme.ACCENT_GLOW, MatrixStackVar);\n'
+     '               Matrix3x2fStack matrices = currentDrawContext.getMatrices();'),
+))
+
+patch_generated_java('ai/derco/hud/elements/BossbarHudElement.java', (
+    ('Color bgColor = new Color(20, 20, 20, 100);',
+     'Color bgColor = ai.derco.hud.core.HudTheme.PANEL;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/ScoreboardHudElement.java', (
+    ('Color bgColor = new Color(20, 20, 20, 100);',
+     'Color bgColor = ai.derco.hud.core.HudTheme.PANEL;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
+    ('private static final Color o = new Color(13, 13, 17);',
+     'private static final Color o = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('private static final Color p = new Color(17, 17, 23);',
+     'private static final Color p = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color r = new Color(223, 223, 243);',
+     'private static final Color r = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color s = new Color(20, 20, 28);',
+     'private static final Color s = ai.derco.hud.core.HudTheme.BORDER;'),
+    ('private static final Color t = new Color(16, 16, 21);',
+     'private static final Color t = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color u = new Color(17, 17, 23);',
+     'private static final Color u = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color v = new Color(23, 23, 30);',
+     'private static final Color v = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color w = new Color(18, 18, 24);',
+     'private static final Color w = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color y = new Color(115, 83, 255);',
+     'private static final Color y = ai.derco.hud.core.HudTheme.ACCENT;'),
+    ('private static final Color z = new Color(70, 46, 174);',
+     'private static final Color z = ai.derco.hud.core.HudTheme.ACCENT_DARK;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
+    ('private static final Color m = new Color(13, 13, 17);',
+     'private static final Color m = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('private static final Color n = new Color(17, 17, 23);',
+     'private static final Color n = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color p = new Color(223, 223, 243);',
+     'private static final Color p = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color q = new Color(20, 20, 28);',
+     'private static final Color q = ai.derco.hud.core.HudTheme.BORDER;'),
+    ('private static final Color s = new Color(17, 17, 23);',
+     'private static final Color s = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color t = new Color(23, 23, 30);',
+     'private static final Color t = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color u = new Color(18, 18, 24);',
+     'private static final Color u = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color v = new Color(23, 23, 30);',
+     'private static final Color v = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color w = new Color(18, 18, 24);',
+     'private static final Color w = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+))
+
+patch_generated_java('ai/derco/hud/elements/HotkeysHudElement.java', (
+    ('static final Color o = new Color(13, 13, 17);',
+     'static final Color o = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('static final Color p = new Color(17, 17, 23);',
+     'static final Color p = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color r = new Color(223, 223, 243);',
+     'private static final Color r = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color s = new Color(20, 20, 28);',
+     'private static final Color s = ai.derco.hud.core.HudTheme.BORDER;'),
+    ('private static final Color t = new Color(16, 16, 21);',
+     'private static final Color t = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color u = new Color(17, 17, 23);',
+     'private static final Color u = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color v = new Color(23, 23, 30);',
+     'private static final Color v = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color w = new Color(18, 18, 24);',
+     'private static final Color w = ai.derco.hud.core.HudTheme.SURFACE_DEEP;'),
+    ('private static final Color x = new Color(115, 83, 255);',
+     'private static final Color x = ai.derco.hud.core.HudTheme.ACCENT;'),
+    ('private static final Color y = new Color(70, 46, 174);',
+     'private static final Color y = ai.derco.hud.core.HudTheme.ACCENT_DARK;'),
+    ('if (clientModule.k() && clientModule.j() != 0) {\n'
+     '            arrayList.add(new HotkeysHudElement.HotkeySnapshot(clientModule, clientModule.g(), "  " + this.b(clientModule.j()) + "  "));',
+     'if (clientModule.k()) {\n'
+     '            String keyName = clientModule.j() == 0 ? "—" : this.b(clientModule.j());\n'
+     '            arrayList.add(new HotkeysHudElement.HotkeySnapshot(clientModule, clientModule.g(), "  " + keyName + "  "));'),
+))
+
+patch_generated_java('ai/derco/modules/hud/HotkeysHud.java', (
+    ('@ModuleInfo(a = "Hotkeys", b = "Displays active key bindings.", c = ModuleCategory.HUD)',
+     '@ModuleInfo(a = "Hotkeys", b = "Displays active modules and their key bindings.", c = ModuleCategory.HUD)'),
+))
+
+patch_generated_java('ai/derco/modules/hud/ClientColor.java', (
+    ('private static final Color DEFAULT_COLOR = new Color(138, 43, 226);',
+     'private static final Color DEFAULT_COLOR = new Color(53, 145, 235);'),
+    ('private static final Color DEFAULT_GRADIENT_START = Color.WHITE;',
+     'private static final Color DEFAULT_GRADIENT_START = new Color(95, 215, 255);'),
+    ('private static final Color DEFAULT_GRADIENT_END = new Color(0, 125, 245);',
+     'private static final Color DEFAULT_GRADIENT_END = new Color(19, 105, 205);'),
+    ('private static final Color[] ASTOLFO_COLORS = new Color[]{new Color(255, 121, 198), new Color(170, 70, 255), new Color(80, 181, 255)};',
+     'private static final Color[] ASTOLFO_COLORS = new Color[]{new Color(53, 185, 255), new Color(22, 112, 190), new Color(105, 219, 255)};'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/HudNotificationCenter.java', (
+    ('private static final Color c = new Color(19, 19, 25);',
+     'private static final Color c = ai.derco.hud.core.HudTheme.SURFACE;'),
+    ('private static final Color d = new Color(19, 19, 26);',
+     'private static final Color d = ai.derco.hud.core.HudTheme.SURFACE_RAISED;'),
+    ('private static final Color e = new Color(13, 13, 17);',
+     'private static final Color e = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('private static final Color f = new Color(17, 17, 23);',
+     'private static final Color f = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/MediaPlaybackNotification.java', (
+    ('private static final Color n = new Color(223, 223, 243);',
+     'private static final Color n = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('private static final Color p = new Color(76, 46, 212, 100);',
+     'private static final Color p = ai.derco.hud.core.HudTheme.ACCENT_GLOW;'),
+    ('private static final Color q = new Color(115, 83, 255);',
+     'private static final Color q = ai.derco.hud.core.HudTheme.ACCENT;'),
+    ('private static final Color r = new Color(70, 46, 174);',
+     'private static final Color r = ai.derco.hud.core.HudTheme.ACCENT_DARK;'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/ActionNotification.java', (
+    ('CLOUD("\\ue904", new Color(100, 72, 227), new Color(100, 72, 227))',
+     'CLOUD("\\ue904", ai.derco.hud.core.HudTheme.ACCENT, ai.derco.hud.core.HudTheme.ACCENT_DARK)'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/TextNotification.java', (
+    ('private static final Color o = new Color(223, 223, 243);',
+     'private static final Color o = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('new Color(223, 223, 255, i)',
+     'ai.derco.hud.core.HudTheme.withAlpha(ai.derco.hud.core.HudTheme.ACCENT, i / 255.0F)'),
+))
+
+patch_generated_java('ai/derco/hud/notifications/WatermarkOverlay.java', (
+    ('private static final Color CARD_TOP = new Color(8, 8, 11, 235);',
+     'private static final Color CARD_TOP = ai.derco.hud.core.HudTheme.BACKGROUND_TOP;'),
+    ('private static final Color CARD_BOTTOM = new Color(5, 5, 8, 240);',
+     'private static final Color CARD_BOTTOM = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
+    ('private static final Color MUTED = new Color(145, 145, 160, 220);',
+     'private static final Color MUTED = ai.derco.hud.core.HudTheme.MUTED;'),
+    ('''   private void drawSegments(Matrix3x2fStack MatrixStackVar, float f, float f2, float f3) {
+      FontRenderer fontRenderer = FontManager.MEDIUM[14];
+      float fB = f2 - fontRenderer.b("DercoVisuals") / 4.0F;
+      if (ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.a() && ModuleRegistry.WATERMARK.fpsAndPing().a()) {
+         this.drawPart(
+            fontRenderer,
+            this.getFps() + " FPS",
+            this.drawPart(
+               fontRenderer,
+               " / ",
+               this.drawPart(
+                  fontRenderer,
+                  this.getPingMs() + " ms",
+                  this.drawPart(
+                     fontRenderer, " / ", this.drawPart(fontRenderer, "DercoVisuals", f, fB, TEXT, f3, MatrixStackVar), fB, MUTED, f3, MatrixStackVar
+                  ),
+                  fB,
+                  TEXT,
+                  f3,
+                  MatrixStackVar
+               ),
+               fB,
+               MUTED,
+               f3,
+               MatrixStackVar
+            ),
+            fB,
+            TEXT,
+            f3,
+            MatrixStackVar
+         );
+      } else {
+         this.drawPart(fontRenderer, "DercoVisuals", f, fB, TEXT, f3, MatrixStackVar);
+      }
+   }''',
+     '''   private void drawSegments(Matrix3x2fStack MatrixStackVar, float f, float f2, float f3) {
+      FontRenderer fontRenderer = FontManager.MEDIUM[14];
+      float fB = f2 - fontRenderer.b("DercoVisuals") / 4.0F;
+      float cursor = this.drawPart(fontRenderer, "DercoVisuals", f, fB, TEXT, f3, MatrixStackVar);
+      if (this.coordinatesEnabled()) {
+         cursor = this.drawPart(fontRenderer, " / ", cursor, fB, MUTED, f3, MatrixStackVar);
+         cursor = this.drawPart(fontRenderer, this.getCoordinates(), cursor, fB,
+            ai.derco.hud.core.HudTheme.ACCENT, f3, MatrixStackVar);
+      }
+
+      if (ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.a() && ModuleRegistry.WATERMARK.fpsAndPing().a()) {
+         cursor = this.drawPart(fontRenderer, " / ", cursor, fB, MUTED, f3, MatrixStackVar);
+         cursor = this.drawPart(fontRenderer, this.getPingMs() + " ms", cursor, fB, TEXT, f3, MatrixStackVar);
+         cursor = this.drawPart(fontRenderer, " / ", cursor, fB, MUTED, f3, MatrixStackVar);
+         this.drawPart(fontRenderer, this.getFps() + " FPS", cursor, fB,
+            ai.derco.hud.core.HudTheme.ACCENT, f3, MatrixStackVar);
+      }
+   }
+
+   private boolean coordinatesEnabled() {
+      return ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.coordinates().a();
+   }
+
+   private String getCoordinates() {
+      if (c.player == null) return "X 0 Y 0 Z 0";
+      return "X " + (int)Math.floor(c.player.getX())
+         + " Y " + (int)Math.floor(c.player.getY())
+         + " Z " + (int)Math.floor(c.player.getZ());
+   }'''),
+    ('''   private float measureTextWidth() {
+      FontRenderer fontRenderer = FontManager.MEDIUM[14];
+      return ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.a() && ModuleRegistry.WATERMARK.fpsAndPing().a()
+         ? 23.0F
+            + fontRenderer.a("DercoVisuals")
+            + fontRenderer.a(" / ")
+            + fontRenderer.a(this.getPingMs() + " ms")
+            + fontRenderer.a(" / ")
+            + fontRenderer.a(this.getFps() + " FPS")
+         : 23.0F + fontRenderer.a("DercoVisuals");
+   }''',
+     '''   private float measureTextWidth() {
+      FontRenderer fontRenderer = FontManager.MEDIUM[14];
+      float width = 23.0F + fontRenderer.a("DercoVisuals");
+      if (this.coordinatesEnabled()) {
+         width += fontRenderer.a(" / ") + fontRenderer.a(this.getCoordinates());
+      }
+
+      if (ModuleRegistry.WATERMARK == null || ModuleRegistry.WATERMARK.a() && ModuleRegistry.WATERMARK.fpsAndPing().a()) {
+         width += fontRenderer.a(" / ")
+            + fontRenderer.a(this.getPingMs() + " ms")
+            + fontRenderer.a(" / ")
+            + fontRenderer.a(this.getFps() + " FPS");
+      }
+      return width;
+   }'''),
+))
+
+patch_generated_java('ai/derco/modules/hud/Watermark.java', (
+    ('private final BooleanSetting fpsAndPing = new BooleanSetting("FPS & Ping", true);',
+     'private final BooleanSetting fpsAndPing = new BooleanSetting("FPS & Ping", true);\n'
+     '   private final BooleanSetting coordinates = new BooleanSetting("Координаты", true);'),
+    ('   public BooleanSetting events() {',
+     '   public BooleanSetting coordinates() {\n'
+     '      return this.coordinates;\n'
+     '   }\n\n'
+     '   public BooleanSetting events() {'),
+))
+
+patch_generated_java('ai/derco/mixin/InGameHudMixin.java', (
+    ('            int i = ClientPlayerEntityVar.getMainArm().getOpposite() == Arm.RIGHT && !ClientPlayerEntityVar.getOffHandStack().isEmpty() ? 24 : 0;',
+     '            int i = ClientPlayerEntityVar.getMainArm().getOpposite() == Arm.RIGHT && !ClientPlayerEntityVar.getOffHandStack().isEmpty() ? 24 : 0;\n'
+     '            int armorHudX = iGetScaledWindowWidth + 92 + 10 + i;\n'
+     '            int armorHudY = DrawContextVar.getScaledWindowHeight() - 16 - 3;\n'
+     '            DrawContextVar.fill(armorHudX - 2, armorHudY - 2, armorHudX + 80, armorHudY + 18, 0xD909192B);\n'
+     '            DrawContextVar.fill(armorHudX - 2, armorHudY - 2, armorHudX + 80, armorHudY - 1, 0xFF35B9FF);'),
+))
+
+
+# DercoVisuals ClickGUI redesign — generator-owned source transformation.
+# Module registry, setting models, and input dispatch are intentionally retained.
+# ---------------------------------------------------------------------------
+palette_migrations = {
+    (139, 92, 246): (35, 145, 255),
+    (115, 83, 255): (30, 140, 255),
+    (126, 90, 254): (42, 156, 255),
+    (106, 70, 215): (15, 108, 218),
+    (70, 46, 174): (12, 82, 180),
+    (140, 110, 255): (70, 172, 255),
+    (135, 95, 255): (48, 156, 255),
+    (95, 65, 200): (20, 112, 218),
+    (110, 70, 255): (30, 140, 255),
+    (80, 60, 150): (18, 90, 165),
+    (52, 40, 95): (17, 58, 102),
+    (38, 30, 72): (12, 35, 65),
+    (55, 50, 85): (16, 55, 100),
+    (60, 55, 95): (20, 64, 110),
+    (50, 50, 75): (16, 48, 82),
+    (36, 30, 56): (16, 48, 72),
+    (38, 34, 52): (24, 70, 118),
+    (18, 16, 23): (8, 18, 32),
+    (25, 25, 33): (16, 36, 60),
+    (18, 18, 24): (9, 20, 35),
+    (24, 23, 32): (17, 39, 64),
+    (20, 19, 28): (12, 28, 48),
+    (13, 12, 17): (6, 14, 27),
+    (10, 10, 14): (4, 10, 20),
+    (26, 25, 34): (16, 39, 65),
+    (15, 14, 19): (8, 17, 31),
+    (22, 21, 28): (12, 27, 46),
+    (28, 28, 40): (14, 31, 52),
+    (26, 26, 38): (11, 24, 42),
+    (34, 30, 48): (13, 30, 54),
+}
+palette_files = [java_root / 'ai/derco/theme/Theme.java']
+palette_files.extend(sorted((java_root / 'ai/derco/gui').rglob('*.java')))
+for palette_path in palette_files:
+    if not palette_path.is_file():
+        continue
+    palette_source = palette_path.read_text(encoding='utf-8', errors='replace')
+    for old_rgb, new_rgb in palette_migrations.items():
+        old_pattern = re.compile(
+            rf'new Color\(\s*{old_rgb[0]}\s*,\s*{old_rgb[1]}\s*,\s*{old_rgb[2]}'
+        )
+        new_color = f'new Color({new_rgb[0]}, {new_rgb[1]}, {new_rgb[2]}'
+        palette_source = old_pattern.sub(new_color, palette_source)
+    palette_path.write_text(palette_source, encoding='utf-8')
+
+# Responsive frame: keep the existing ScreenScale and all input callbacks intact.
+patch_generated_java('ai/derco/gui/core/DercoVisualsClickGuiScreen.java', (
+    ('private static final float c = 411.0F;', 'private static final float c = 520.0F;'),
+    ('private static final float d = 243.5F;', 'private static final float d = 270.0F;'),
+    ('return GuiInput.a(f2, f3, 411.0F, 243.5F, i, i2);',
+     'return GuiInput.a(f2, f3, d(), e(), i, i2);'),
+    ('MinecraftContext.getWidth() / 4.0F - 205.5F',
+     'MinecraftContext.getWidth() / 4.0F - d() / 2.0F'),
+    ('MinecraftContext.getHeight() / 4.0F - 121.75F',
+     'MinecraftContext.getHeight() / 4.0F - e() / 2.0F'),
+    ('''   public static float d() {
+      return 411.0F;
+   }''',
+     '''   public static float d() {
+      return Math.max(320.0F, Math.min(520.0F, MinecraftContext.getWidth() / 2.0F - 32.0F));
+   }'''),
+    ('''   public static float e() {
+      return 243.5F;
+   }''',
+     '''   public static float e() {
+      return Math.max(180.0F, Math.min(270.0F, MinecraftContext.getHeight() / 2.0F - 28.0F));
+   }'''),
+))
+
+# Dock positions follow the responsive frame rather than old hard-coded dimensions.
+dock_path = java_root / 'ai/derco/gui/core/DockPanelController.java'
+dock_source = dock_path.read_text(encoding='utf-8', errors='replace')
+dock_source = dock_source.replace('411.0F', 'DercoVisualsClickGuiScreen.d()')
+dock_source = dock_source.replace('243.5F', 'DercoVisualsClickGuiScreen.e()')
+dock_path.write_text(dock_source, encoding='utf-8')
+
+# Dock the selected module's settings card inside the right edge of the main frame.
+patch_generated_java('ai/derco/gui/modules/ModuleCardList.java', (
+    ('''   public boolean hasOpenPanelAt(int i, int i2) {
+      for (ModuleCard moduleCard : this.c) {
+         if (!moduleCard.f() && (moduleCard.d(i, i2) || moduleCard.f(i, i2))) {
+            return true;
+         }
+      }
+
+      return false;
+   }''',
+     '''   public boolean hasOpenPanelAt(int i, int i2) {
+      for (ModuleCard moduleCard : this.c) {
+         if (!moduleCard.f() && (moduleCard.d(i, i2) || moduleCard.f(i, i2))) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   public boolean hasSettingsPanelOpen() {
+      for (ModuleCard moduleCard : this.c) {
+         if (!moduleCard.f() && !moduleCard.g()) {
+            return true;
+         }
+      }
+
+      return false;
+   }'''),
+    ('MinecraftContext.getWidth() / 4.0F - 205.5F',
+     'MinecraftContext.getWidth() / 4.0F - DercoVisualsClickGuiScreen.d() / 2.0F'),
+    ('float panelX = z ? rightGui + 20.0F : leftGui - 20.0F - 150.0F;',
+     'float panelX = rightGui - 160.0F;'),
+))
+
+# Reserve grid width for the inspector, keeping existing setting widgets and input.
+patch_generated_java('ai/derco/gui/modules/ModuleGrid.java', (
+    ('''   public ModuleGrid(GuiEntrySource guiEntrySource) {
+      this.a = guiEntrySource;
+   }
+
+   public List<ModuleCard> a() {''',
+     '''   public ModuleGrid(GuiEntrySource guiEntrySource) {
+      this.a = guiEntrySource;
+   }
+
+   private float contentWidth() {
+      return Math.max(150.0F, DercoVisualsClickGuiScreen.d() - (this.i.hasSettingsPanelOpen() ? 166.0F : 0.0F));
+   }
+
+   public boolean hasSettingsPanelOpen() {
+      return this.i.hasSettingsPanelOpen();
+   }
+
+   public List<ModuleCard> a() {'''),
+    ('''   private float k() {
+      int iF = this.a.f();
+      float fD = DercoVisualsClickGuiScreen.d() - 38.0F;
+      return iF == 1 ? fD - 2.0F : (fD - 6.5F) / 2.0F - 1.0F;
+   }''',
+     '''   private float k() {
+      int columns = Math.max(1, this.a.f());
+      float available = this.contentWidth() - 38.0F;
+      return Math.max(72.0F, (available - 6.5F * (columns - 1)) / columns - 1.0F);
+   }'''),
+    ('GuiLayerRegistry.a().a(GuiLayerRegistry.Layer.CONTENT, f2, f4, DercoVisualsClickGuiScreen.d(), fE);',
+     'GuiLayerRegistry.a().a(GuiLayerRegistry.Layer.CONTENT, f2, f4, this.contentWidth(), fE);'),
+    ('renderer2D.b().a(f2, f4, DercoVisualsClickGuiScreen.d(), fE, MatrixStackVar);',
+     'renderer2D.b().a(f2, f4, this.contentWidth(), fE, MatrixStackVar);'),
+    ('this.h.a(MatrixStackVar, renderer2D, f2 + DercoVisualsClickGuiScreen.d() - 2.0F, f4, fE, fCeil, fE, i, i2, false);',
+     'this.h.a(MatrixStackVar, renderer2D, f2 + this.contentWidth() - 2.0F, f4, fE, fCeil, fE, i, i2, false);'),
+    ('int i6 = i5 % 2;', 'int i6 = i5 % iF;'),
+    ('float f11 = f9 + i5 / 2 * 34.0F + 1.0F;', 'float f11 = f9 + i5 / iF * 34.0F + 1.0F;'),
+))
+
+patch_generated_java('ai/derco/gui/modules/ModulesTab.java', (
+    ('''   @Override
+   public int f() {
+      return 2;
+   }''',
+     '''   @Override
+   public int f() {
+      float availableWidth = DercoVisualsClickGuiScreen.d() - (this.m.hasSettingsPanelOpen() ? 166.0F : 0.0F);
+      return Math.max(1, Math.min(3, (int)((availableWidth - 38.0F) / 145.0F)));
+   }'''),
+    ('private static final float c = 117.5F;', 'private static final float c = 140.0F;'),
+    ('new SearchBox(117.5F, 15.0F)', 'new SearchBox(140.0F, 15.0F)'),
+    ('fD - 4.0F - 117.5F', 'fD - 4.0F - 140.0F'),
+))
+
+# Rebuild module cards with a subtle navy gradient and animated electric-blue edge.
+patch_generated_java('ai/derco/gui/modules/ModuleRowRenderer.java', (
+    ('''      Color cardBorder = new Color(16, 36, 60);
+      renderer2D.a(f2 - 0.5F, f3 - 0.5F, f4 + 1.0F, f5 + 1.0F, 9.5F, cardBorder, cardBorder, cardBorder, cardBorder, MatrixStackVar);
+      Color cardBg = new Color(9, 20, 35);
+      renderer2D.a(f2, f3, f4, f5, 9.5F, cardBg, cardBg, cardBg, cardBg, MatrixStackVar);''',
+     '''      Color cardBorder = new Color(20, 76, 126, 118 + (int)(f6 * 120.0F));
+      renderer2D.a(f2 - 0.5F, f3 - 0.5F, f4 + 1.0F, f5 + 1.0F, 9.5F, cardBorder, cardBorder, cardBorder, cardBorder, MatrixStackVar);
+      Color cardTop = new Color(12, 31, 53);
+      Color cardBottom = new Color(8, 19, 34);
+      renderer2D.a(f2, f3, f4, f5, 9.5F, cardTop, cardTop, cardBottom, cardBottom, MatrixStackVar);
+      if (f6 > 0.01F) {
+         Color hoverGlow = new Color(35, 145, 255, (int)(58.0F * f6));
+         renderer2D.a(f2 + 8.0F, f3 + 1.0F, Math.max(0.0F, f4 - 16.0F), 0.8F, hoverGlow, MatrixStackVar);
+      }'''),
+))
+
+# Category buttons gain clear rounded selected/hover treatments; hit testing is unchanged.
+patch_generated_java('ai/derco/gui/core/TabSelector.java', (
+    ('''            fontRenderer.a(
+               strArrC[i4],''',
+     '''            Color pillBorder = i5 != 0
+               ? new Color(42, 151, 255, 190)
+               : new Color(26, 67, 104, (int)(105.0F + 50.0F * this.i.get(i4).j()));
+            Color pillBackground = i5 != 0
+               ? new Color(18, 91, 158, 125)
+               : new Color(8, 22, 38, 185);
+            renderer2D.a(
+               fFloatValue - 6.0F,
+               f4 - 5.0F,
+               this.l.get(i4) + 12.0F,
+               17.0F,
+               6.0F,
+               pillBorder, pillBorder, pillBackground, pillBackground,
+               MatrixStackVar
+            );
+            fontRenderer.a(
+               strArrC[i4],'''),
+))
+
+
+# Register the owned icon family and wire representative art into the live GUI.
+# Existing Pulse-derived GUI logic is preserved; only icons and tiny text offsets change.
+def replace_generated_once(path, old, new, label):
+    current = path.read_text(encoding='utf-8')
+    count = current.count(old)
+    if count != 1:
+        raise SystemExit('Could not patch ' + label + ': expected one source anchor, found ' + str(count))
+    path.write_text(current.replace(old, new), encoding='utf-8')
+
+registry_path = java_root / 'ai' / 'derco' / 'render' / 'icons' / 'IconTextureRegistry.java'
+registry_extra = (
+    '          register("category_visuals", "textures/categories/visuals.png");\n'
+    '          register("category_hud", "textures/categories/hud.png");\n'
+    '          register("category_utilities", "textures/categories/utilities.png");\n'
+    '          register("category_combat", "textures/categories/combat.png");\n'
+    '          register("category_movement", "textures/categories/movement.png");\n'
+    '          register("category_render", "textures/categories/render.png");\n'
+    '          register("category_player", "textures/categories/player.png");\n'
+    '          register("category_world", "textures/categories/world.png");\n'
+    '          register("category_misc", "textures/categories/misc.png");\n'
+    '          register("hud_armor", "textures/hud/armor.png");\n'
+    '          register("hud_bossbar", "textures/hud/bossbar.png");\n'
+    '          register("hud_cooldowns", "textures/hud/cooldowns.png");\n'
+    '          register("hud_effects", "textures/hud/effects.png");\n'
+    '          register("hud_hotkeys", "textures/hud/hotkeys.png");\n'
+    '          register("hud_inventory", "textures/hud/inventory.png");\n'
+    '          register("hud_potions", "textures/hud/potions.png");\n'
+    '          register("hud_saturation", "textures/hud/saturation.png");\n'
+    '          register("hud_scoreboard", "textures/hud/scoreboard.png");\n'
+    '          register("hud_target", "textures/hud/target.png");\n'
+    '          register("hud_totems", "textures/hud/totems.png");\n'
+    '          register("hud_watermark", "textures/hud/watermark.png");\n'
+    '          register("hud_tnt_timer", "textures/hud/tnt_timer.png");\n'
+    '          register("module_crosshair", "textures/modules/crosshair.png");\n'
+    '          register("module_fullbright", "textures/modules/fullbright.png");\n'
+    '          register("module_trails", "textures/modules/trails.png");\n'
+    '          register("module_particles", "textures/modules/particles.png");\n'
+    '          register("module_hitbox", "textures/modules/hitbox.png");\n'
+    '          register("module_jump_circles", "textures/modules/jump_circles.png");\n'
+    '          register("module_zoom", "textures/modules/zoom.png");\n'
+    '          register("module_sprint", "textures/modules/sprint.png");\n'
+    '          register("module_elytra", "textures/modules/elytra.png");\n'
+    '          register("module_world", "textures/modules/world.png");\n'
+    '          register("module_sound", "textures/modules/sound.png");\n'
+    '          register("module_inventory_sort", "textures/modules/inventory_sort.png");\n'
+    '          register("panel_selected_module", "textures/panels/selected_module.png");\n'
+    '          register("panel_detail_accent", "textures/panels/detail_accent.png");\n'
+)
+replace_generated_once(
+    registry_path,
+    '         register("example_group", "textures/clickgui/example_group.png");\n         registerPotionAliases();',
+    '         register("example_group", "textures/clickgui/example_group.png");\n' + registry_extra + '         registerPotionAliases();',
+    'icon texture registry'
+)
+
+tab_selector_path = java_root / 'ai' / 'derco' / 'gui' / 'core' / 'TabSelector.java'
+replace_generated_once(
+    tab_selector_path,
+    'import ai.derco.render.font.FontRenderer;\n',
+    'import ai.derco.render.font.FontRenderer;\nimport ai.derco.render.icons.IconTextureRegistry;\n',
+    'category icon import'
+)
+replace_generated_once(
+    tab_selector_path,
+    'this.l.put(i2, fontRenderer.a(strArrC[i2]));',
+    'this.l.put(i2, fontRenderer.a(strArrC[i2]) + (iconForLabel(strArrC[i2]) == null ? 0.0F : 12.0F));',
+    'category rail sizing'
+)
+replace_generated_once(
+    tab_selector_path,
+    '            fontRenderer.a(\n               strArrC[i4],\n               fFloatValue,\n               f4,',
+    '            String iconKey = iconForLabel(strArrC[i4]);\n'
+    '            if (iconKey != null) {\n'
+    '               renderer2D.a(IconTextureRegistry.get(iconKey), fFloatValue, f4 - 1.0F, 9.0F, 9.0F, Color.WHITE, MatrixStackVar);\n'
+    '            }\n'
+    '            fontRenderer.a(\n'
+    '               strArrC[i4],\n'
+    '               fFloatValue + (iconKey == null ? 0.0F : 12.0F),\n'
+    '               f4,',
+    'category rail icon rendering'
+)
+replace_generated_once(
+    tab_selector_path,
+    '   public static String b(String str, String str2, int i, int i2, int i3, int i4) {',
+    '   private static String iconForLabel(String label) {\n'
+    '      if (label == null) return null;\n'
+    '      return switch (label) {\n'
+    '         case "Visuals" -> "category_visuals";\n'
+    '         case "HUD" -> "category_hud";\n'
+    '         case "Utilities" -> "category_utilities";\n'
+    '         default -> null;\n'
+    '      };\n'
+    '   }\n\n'
+    '   public static String b(String str, String str2, int i, int i2, int i3, int i4) {',
+    'category icon mapping'
+)
+
+module_rows_path = java_root / 'ai' / 'derco' / 'gui' / 'modules' / 'ModuleRowRenderer.java'
+replace_generated_once(
+    module_rows_path,
+    'import ai.derco.render.Renderer2D;\n',
+    'import ai.derco.render.Renderer2D;\nimport ai.derco.render.icons.IconTextureRegistry;\n',
+    'module icon import'
+)
+replace_generated_once(
+    module_rows_path,
+    '      if (fontRenderer != null) {\n'
+    '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + 12.0F, f3 + f5 / 2.0F - 4.0F, textColor);\n'
+    '      } else {\n'
+    '         TextRenderer tr = MinecraftClient.getInstance().textRenderer;\n'
+    '         DrawContext dc = Renderer2DImpl.currentDrawContext;\n'
+    '         if (dc != null) {\n'
+    '            dc.drawText(tr, guiEntry.a(), (int)(f2 + 12.0F), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\n'
+    '         }\n'
+    '      }',
+    '      String moduleIconKey = moduleIconForName(guiEntry.a());\n'
+    '      float textOffset = moduleIconKey == null ? 12.0F : 26.0F;\n'
+    '      if (moduleIconKey != null) {\n'
+    '         renderer2D.a(IconTextureRegistry.get(moduleIconKey), f2 + 2.0F, f3 + f5 / 2.0F - 5.0F, 10.0F, 10.0F, Color.WHITE, MatrixStackVar);\n'
+    '      }\n'
+    '      if (fontRenderer != null) {\n'
+    '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + textOffset, f3 + f5 / 2.0F - 4.0F, textColor);\n'
+    '      } else {\n'
+    '         TextRenderer tr = MinecraftClient.getInstance().textRenderer;\n'
+    '         DrawContext dc = Renderer2DImpl.currentDrawContext;\n'
+    '         if (dc != null) {\n'
+    '            dc.drawText(tr, guiEntry.a(), (int)(f2 + textOffset), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\n'
+    '         }\n'
+    '      }',
+    'module card icon rendering'
+)
+replace_generated_once(
+    module_rows_path,
+    '   private void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f2, float f3, float f4, float f5, float f6) {',
+    '   private static String moduleIconForName(String name) {\n'
+    '      if (name == null) return null;\n'
+    '      return switch (name.toLowerCase(java.util.Locale.ROOT)) {\n'
+    '         case "crosshair" -> "module_crosshair";\n'
+    '         case "full bright" -> "module_fullbright";\n'
+    '         case "trails" -> "module_trails";\n'
+    '         case "particles", "world particles" -> "module_particles";\n'
+    '         case "hitbox customizer" -> "module_hitbox";\n'
+    '         case "jump circles" -> "module_jump_circles";\n'
+    '         case "zoom" -> "module_zoom";\n'
+    '         case "sprint" -> "module_sprint";\n'
+    '         case "elytra swap" -> "module_elytra";\n'
+    '         case "world customizer" -> "module_world";\n'
+    '         case "sound controller" -> "module_sound";\n'
+    '         case "chest sorter" -> "module_inventory_sort";\n'
+    '         default -> null;\n'
+    '      };\n'
+    '   }\n\n'
+    '   private void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f2, float f3, float f4, float f5, float f6) {',
+    'module icon mapping'
+)
+
+settings_panel_path = java_root / 'ai' / 'derco' / 'gui' / 'modules' / 'ModuleSettingsPanel.java'
+replace_generated_once(
+    settings_panel_path,
+    '            renderer2D.a(f8, f9, f6, f7, 12.0F * fMax, bg, bg, bg, bg, MatrixStackVar);',
+    '            renderer2D.a(f8, f9, f6, f7, 12.0F * fMax, bg, bg, bg, bg, MatrixStackVar);\n'
+    '            float brandArtHeight = Math.min(f7, 28.0F * fMax);\n'
+    '            if (brandArtHeight > 1.0F) {\n'
+    '               renderer2D.a(IconTextureRegistry.get("panel_selected_module"), f8, f9, f6, brandArtHeight, new Color(255, 255, 255, Math.min(120, i3)), MatrixStackVar);\n'
+    '            }',
+    'selected-module panel art'
+)
+
+# Validate every hard-coded registry path after all brand assets have been copied.
+registry_source = registry_path.read_text(encoding='utf-8')
+for registered_resource in re.findall(r'register\(\s*"[^"]+"\s*,\s*"([^"]+)"\s*\)', registry_source):
+    resource_path = SRC / 'resources' / 'assets' / 'dercovisuals' / registered_resource
+    if not resource_path.is_file():
+        raise SystemExit('IconTextureRegistry points to a missing asset: ' + registered_resource)
+
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
 # descriptors, so a successful javac run alone cannot catch malformed metadata.
@@ -1654,4 +2428,4 @@ refmap_name = generated_mixin_config.get('refmap')
 if refmap_name and not (SRC / 'resources' / refmap_name).is_file():
     raise SystemExit(f'Mixin refmap is missing: {refmap_name}')
 
-print(f'Prepared DercoVisuals: {len(list((SRC / "java").rglob("*.java")))} Java files')
+print(f'Prepared DercoVisuals: {len(list((SRC / "java").rglob("*.java")))} Java files, {len(asset_paths)} owned PNG assets')
