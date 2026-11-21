@@ -6,7 +6,7 @@ rebranded working tree for the DercoVisuals build; it never edits the archive.
 """
 from pathlib import Path
 from zipfile import ZipFile
-import json, re, shutil, sys
+import json, re, shutil, sys, runpy
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = ROOT / 'pulse-src.zip'
@@ -668,26 +668,25 @@ for p in sorted((SRC / 'resources').rglob('*'), key=lambda item: len(item.parts)
         p.rename(target)
 
 
-# Import the DercoVisuals-owned original PNG pack after upstream rebranding. The source
-# archive remains unchanged; these PNGs are the only source for the custom visual kit.
-ASSET_PACK = ROOT / 'tools' / 'assets' / 'derco-visual-pack.zip'
-if not ASSET_PACK.is_file():
-    raise SystemExit(f'Missing original DercoVisuals asset pack: {ASSET_PACK}')
-ASSET_UNPACK = ROOT / 'build' / 'derco-visual-assets'
-shutil.rmtree(ASSET_UNPACK, ignore_errors=True)
-ASSET_UNPACK.mkdir(parents=True, exist_ok=True)
-with ZipFile(ASSET_PACK) as asset_zip:
-    asset_zip.extractall(ASSET_UNPACK)
-asset_manifest_path = ASSET_UNPACK / 'asset-manifest.json'
+# Generate the original DercoVisuals illustrations inside tools/assets, then copy the
+# PNG source files into the final Minecraft namespace. The upstream archive is untouched.
+ASSET_SCRIPT = ROOT / 'tools' / 'assets' / 'generate_derco_assets.py'
+if not ASSET_SCRIPT.is_file():
+    raise SystemExit(f'Missing DercoVisuals artwork source: {ASSET_SCRIPT}')
+runpy.run_path(str(ASSET_SCRIPT), run_name='__main__')
+ASSET_SOURCE_ROOT = ROOT / 'tools' / 'assets' / 'png'
+asset_manifest_path = ASSET_SOURCE_ROOT / 'asset-manifest.json'
 if not asset_manifest_path.is_file():
-    raise SystemExit('DercoVisuals asset pack has no asset-manifest.json')
+    raise SystemExit('DercoVisuals artwork generator did not create asset-manifest.json')
 asset_manifest = json.loads(asset_manifest_path.read_text(encoding='utf-8'))
 asset_paths = [asset for group in asset_manifest.values() for asset in group]
+if len(asset_paths) != 42 or len(set(asset_paths)) != 42:
+    raise SystemExit(f'Expected 42 distinct DercoVisuals assets; manifest declares {len(asset_paths)}')
 asset_resource_root = SRC / 'resources' / 'assets' / 'dercovisuals'
 for relative_asset in asset_paths:
-    source_asset = ASSET_UNPACK / relative_asset
-    if not source_asset.is_file():
-        raise SystemExit(f'DercoVisuals source PNG is missing from asset pack: {relative_asset}')
+    source_asset = ASSET_SOURCE_ROOT / relative_asset
+    if not source_asset.is_file() or source_asset.stat().st_size == 0:
+        raise SystemExit(f'DercoVisuals source PNG is missing or empty: {relative_asset}')
     destination_asset = asset_resource_root / relative_asset
     destination_asset.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source_asset, destination_asset)
