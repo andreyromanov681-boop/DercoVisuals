@@ -1163,181 +1163,180 @@ patch_generated_java('ai/derco/DercoVisuals.java', (
      '        });'),
 ))
 
-# Register the owned icon family and apply it to the category rail, module cards, and
-# selected-module inspector. Every registered path is checked before Gradle starts.
+# Register the owned icon family and wire representative art into the live GUI.
+# Existing Pulse-derived GUI logic is preserved; only icons and tiny text offsets change.
 def replace_generated_once(path, old, new, label):
     current = path.read_text(encoding='utf-8')
     count = current.count(old)
     if count != 1:
-        raise SystemExit(f'Could not patch {label}: expected one source anchor, found {count}')
+        raise SystemExit('Could not patch ' + label + ': expected one source anchor, found ' + str(count))
     path.write_text(current.replace(old, new), encoding='utf-8')
 
 registry_path = java_root / 'ai' / 'derco' / 'render' / 'icons' / 'IconTextureRegistry.java'
-registry_extra = '''          register("arrow_v", "textures/clickgui/arrow.png");
-          register("category_visuals", "textures/categories/visuals.png");
-          register("category_hud", "textures/categories/hud.png");
-          register("category_utilities", "textures/categories/utilities.png");
-          register("category_combat", "textures/categories/combat.png");
-          register("category_movement", "textures/categories/movement.png");
-          register("category_render", "textures/categories/render.png");
-          register("category_player", "textures/categories/player.png");
-          register("category_world", "textures/categories/world.png");
-          register("category_misc", "textures/categories/misc.png");
-          register("hud_armor", "textures/hud/armor.png");
-          register("hud_bossbar", "textures/hud/bossbar.png");
-          register("hud_cooldowns", "textures/hud/cooldowns.png");
-          register("hud_effects", "textures/hud/effects.png");
-          register("hud_hotkeys", "textures/hud/hotkeys.png");
-          register("hud_inventory", "textures/hud/inventory.png");
-          register("hud_potions", "textures/hud/potions.png");
-          register("hud_saturation", "textures/hud/saturation.png");
-          register("hud_scoreboard", "textures/hud/scoreboard.png");
-          register("hud_target", "textures/hud/target.png");
-          register("hud_totems", "textures/hud/totems.png");
-          register("hud_watermark", "textures/hud/watermark.png");
-          register("hud_tnt_timer", "textures/hud/tnt_timer.png");
-          register("module_crosshair", "textures/modules/crosshair.png");
-          register("module_fullbright", "textures/modules/fullbright.png");
-          register("module_trails", "textures/modules/trails.png");
-          register("module_particles", "textures/modules/particles.png");
-          register("module_hitbox", "textures/modules/hitbox.png");
-          register("module_jump_circles", "textures/modules/jump_circles.png");
-          register("module_zoom", "textures/modules/zoom.png");
-          register("module_sprint", "textures/modules/sprint.png");
-          register("module_elytra", "textures/modules/elytra.png");
-          register("module_world", "textures/modules/world.png");
-          register("module_sound", "textures/modules/sound.png");
-          register("module_inventory_sort", "textures/modules/inventory_sort.png");
-          register("panel_selected_module", "textures/panels/selected_module.png");
-          register("panel_detail_accent", "textures/panels/detail_accent.png");
-          registerPotionAliases();'''
+registry_extra = (
+    '          register("category_visuals", "textures/categories/visuals.png");\n'
+    '          register("category_hud", "textures/categories/hud.png");\n'
+    '          register("category_utilities", "textures/categories/utilities.png");\n'
+    '          register("category_combat", "textures/categories/combat.png");\n'
+    '          register("category_movement", "textures/categories/movement.png");\n'
+    '          register("category_render", "textures/categories/render.png");\n'
+    '          register("category_player", "textures/categories/player.png");\n'
+    '          register("category_world", "textures/categories/world.png");\n'
+    '          register("category_misc", "textures/categories/misc.png");\n'
+    '          register("hud_armor", "textures/hud/armor.png");\n'
+    '          register("hud_bossbar", "textures/hud/bossbar.png");\n'
+    '          register("hud_cooldowns", "textures/hud/cooldowns.png");\n'
+    '          register("hud_effects", "textures/hud/effects.png");\n'
+    '          register("hud_hotkeys", "textures/hud/hotkeys.png");\n'
+    '          register("hud_inventory", "textures/hud/inventory.png");\n'
+    '          register("hud_potions", "textures/hud/potions.png");\n'
+    '          register("hud_saturation", "textures/hud/saturation.png");\n'
+    '          register("hud_scoreboard", "textures/hud/scoreboard.png");\n'
+    '          register("hud_target", "textures/hud/target.png");\n'
+    '          register("hud_totems", "textures/hud/totems.png");\n'
+    '          register("hud_watermark", "textures/hud/watermark.png");\n'
+    '          register("hud_tnt_timer", "textures/hud/tnt_timer.png");\n'
+    '          register("module_crosshair", "textures/modules/crosshair.png");\n'
+    '          register("module_fullbright", "textures/modules/fullbright.png");\n'
+    '          register("module_trails", "textures/modules/trails.png");\n'
+    '          register("module_particles", "textures/modules/particles.png");\n'
+    '          register("module_hitbox", "textures/modules/hitbox.png");\n'
+    '          register("module_jump_circles", "textures/modules/jump_circles.png");\n'
+    '          register("module_zoom", "textures/modules/zoom.png");\n'
+    '          register("module_sprint", "textures/modules/sprint.png");\n'
+    '          register("module_elytra", "textures/modules/elytra.png");\n'
+    '          register("module_world", "textures/modules/world.png");\n'
+    '          register("module_sound", "textures/modules/sound.png");\n'
+    '          register("module_inventory_sort", "textures/modules/inventory_sort.png");\n'
+    '          register("panel_selected_module", "textures/panels/selected_module.png");\n'
+    '          register("panel_detail_accent", "textures/panels/detail_accent.png");\n'
+)
 replace_generated_once(
     registry_path,
-    '          register("example_group", "textures/clickgui/example_group.png");\\n          registerPotionAliases();',
-    '          register("example_group", "textures/clickgui/example_group.png");\\n' + registry_extra,
+    '         register("example_group", "textures/clickgui/example_group.png");\n         registerPotionAliases();',
+    '         register("example_group", "textures/clickgui/example_group.png");\n' + registry_extra + '         registerPotionAliases();',
     'icon texture registry'
 )
 
-# Category rail gets a 9px pictogram next to the three categories that exist in this
-# project today. Additional theme icons stay available without inventing new categories.
 tab_selector_path = java_root / 'ai' / 'derco' / 'gui' / 'core' / 'TabSelector.java'
-replace_generated_once(tab_selector_path,
-    'import ai.derco.render.font.FontRenderer;\\n',
-    'import ai.derco.render.font.FontRenderer;\\nimport ai.derco.render.icons.IconTextureRegistry;\\n',
-    'category icon import')
-replace_generated_once(tab_selector_path,
+replace_generated_once(
+    tab_selector_path,
+    'import ai.derco.render.font.FontRenderer;\n',
+    'import ai.derco.render.font.FontRenderer;\nimport ai.derco.render.icons.IconTextureRegistry;\n',
+    'category icon import'
+)
+replace_generated_once(
+    tab_selector_path,
     'this.l.put(i2, fontRenderer.a(strArrC[i2]));',
     'this.l.put(i2, fontRenderer.a(strArrC[i2]) + (iconForLabel(strArrC[i2]) == null ? 0.0F : 12.0F));',
-    'category rail sizing')
-replace_generated_once(tab_selector_path,
-    '            fontRenderer.a(\\n                strArrC[i4],\\n                fFloatValue,\\n                f4,',
-    '            String iconKey = iconForLabel(strArrC[i4]);\\n'
-    '            if (iconKey != null) {\\n'
-    '               renderer2D.a(IconTextureRegistry.get(iconKey), fFloatValue, f4 - 1.0F, 9.0F, 9.0F, new Color(255, 255, 255), MatrixStackVar);\\n'
-    '            }\\n'
-    '            fontRenderer.a(\\n'
-    '                strArrC[i4],\\n'
-    '                fFloatValue + (iconKey == null ? 0.0F : 12.0F),\\n'
-    '                f4,',
-    'category rail icon rendering')
-replace_generated_once(tab_selector_path,
-    '    public static String b(String str, String str2, int i, int i2, int i3, int i4) {',
-    '    private static String iconForLabel(String label) {\\n'
-    '       if (label == null) return null;\\n'
-    '       return switch (label) {\\n'
-    '          case "Visuals" -> "category_visuals";\\n'
-    '          case "HUD" -> "category_hud";\\n'
-    '          case "Utilities" -> "category_utilities";\\n'
-    '          default -> null;\\n'
-    '       };\\n'
-    '    }\\n\\n'
-    '    public static String b(String str, String str2, int i, int i2, int i3, int i4) {',
-    'category icon mapping')
+    'category rail sizing'
+)
+replace_generated_once(
+    tab_selector_path,
+    '            fontRenderer.a(\n               strArrC[i4],\n               fFloatValue,\n               f4,',
+    '            String iconKey = iconForLabel(strArrC[i4]);\n'
+    '            if (iconKey != null) {\n'
+    '               renderer2D.a(IconTextureRegistry.get(iconKey), fFloatValue, f4 - 1.0F, 9.0F, 9.0F, Color.WHITE, MatrixStackVar);\n'
+    '            }\n'
+    '            fontRenderer.a(\n'
+    '               strArrC[i4],\n'
+    '               fFloatValue + (iconKey == null ? 0.0F : 12.0F),\n'
+    '               f4,',
+    'category rail icon rendering'
+)
+replace_generated_once(
+    tab_selector_path,
+    '   public static String b(String str, String str2, int i, int i2, int i3, int i4) {',
+    '   private static String iconForLabel(String label) {\n'
+    '      if (label == null) return null;\n'
+    '      return switch (label) {\n'
+    '         case "Visuals" -> "category_visuals";\n'
+    '         case "HUD" -> "category_hud";\n'
+    '         case "Utilities" -> "category_utilities";\n'
+    '         default -> null;\n'
+    '      };\n'
+    '   }\n\n'
+    '   public static String b(String str, String str2, int i, int i2, int i3, int i4) {',
+    'category icon mapping'
+)
 
-# Module cards use distinct feature pictograms for the key, frequently used modules.
 module_rows_path = java_root / 'ai' / 'derco' / 'gui' / 'modules' / 'ModuleRowRenderer.java'
-replace_generated_once(module_rows_path,
-    'import ai.derco.render.Renderer2D;\\n',
-    'import ai.derco.render.Renderer2D;\\nimport ai.derco.render.icons.IconTextureRegistry;\\n',
-    'module icon import')
-replace_generated_once(module_rows_path,
-    '      if (fontRenderer != null) {\\n'
-    '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + 12.0F, f3 + f5 / 2.0F - 4.0F, textColor);\\n'
-    '      } else {\\n'
-    '         class_327 tr = class_310.method_1551().field_1772;\\n'
-    '         class_332 dc = Renderer2DImpl.currentDrawContext;\\n'
-    '         if (dc != null) {\\n'
-    '            dc.method_51433(tr, guiEntry.a(), (int)(f2 + 12.0F), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\\n'
-    '         }\\n'
+replace_generated_once(
+    module_rows_path,
+    'import ai.derco.render.Renderer2D;\n',
+    'import ai.derco.render.Renderer2D;\nimport ai.derco.render.icons.IconTextureRegistry;\n',
+    'module icon import'
+)
+replace_generated_once(
+    module_rows_path,
+    '      if (fontRenderer != null) {\n'
+    '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + 12.0F, f3 + f5 / 2.0F - 4.0F, textColor);\n'
+    '      } else {\n'
+    '         class_327 tr = class_310.method_1551().field_1772;\n'
+    '         class_332 dc = Renderer2DImpl.currentDrawContext;\n'
+    '         if (dc != null) {\n'
+    '            dc.method_51433(tr, guiEntry.a(), (int)(f2 + 12.0F), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\n'
+    '         }\n'
     '      }',
-    '      String moduleIconKey = moduleIconForName(guiEntry.a());\\n'
-    '      float textOffset = moduleIconKey == null ? 12.0F : 15.0F;\\n'
-    '      if (moduleIconKey != null) {\\n'
-    '         renderer2D.a(IconTextureRegistry.get(moduleIconKey), f2 + 1.0F, f3 + f5 / 2.0F - 5.0F, 10.0F, 10.0F, Color.WHITE, MatrixStackVar);\\n'
-    '      }\\n'
-    '      if (fontRenderer != null) {\\n'
-    '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + textOffset, f3 + f5 / 2.0F - 4.0F, textColor);\\n'
-    '      } else {\\n'
-    '         class_327 tr = class_310.method_1551().field_1772;\\n'
-    '         class_332 dc = Renderer2DImpl.currentDrawContext;\\n'
-    '         if (dc != null) {\\n'
-    '            dc.method_51433(tr, guiEntry.a(), (int)(f2 + textOffset), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\\n'
-    '         }\\n'
+    '      String moduleIconKey = moduleIconForName(guiEntry.a());\n'
+    '      float textOffset = moduleIconKey == null ? 12.0F : 26.0F;\n'
+    '      if (moduleIconKey != null) {\n'
+    '         renderer2D.a(IconTextureRegistry.get(moduleIconKey), f2 + 2.0F, f3 + f5 / 2.0F - 5.0F, 10.0F, 10.0F, Color.WHITE, MatrixStackVar);\n'
+    '      }\n'
+    '      if (fontRenderer != null) {\n'
+    '         fontRenderer.a(MatrixStackVar, guiEntry.a(), f2 + textOffset, f3 + f5 / 2.0F - 4.0F, textColor);\n'
+    '      } else {\n'
+    '         class_327 tr = class_310.method_1551().field_1772;\n'
+    '         class_332 dc = Renderer2DImpl.currentDrawContext;\n'
+    '         if (dc != null) {\n'
+    '            dc.method_51433(tr, guiEntry.a(), (int)(f2 + textOffset), (int)(f3 + f5 / 2.0F - 4.0F), textColor.getRGB(), false);\n'
+    '         }\n'
     '      }',
-    'module card icon rendering')
-replace_generated_once(module_rows_path,
-    '    private void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f2, float f3, float f4, float f5, float f6) {',
-    '    private static String moduleIconForName(String name) {\\n'
-    '       if (name == null) return null;\\n'
-    '       return switch (name.toLowerCase(java.util.Locale.ROOT)) {\\n'
-    '          case "crosshair" -> "module_crosshair";\\n'
-    '          case "full bright" -> "module_fullbright";\\n'
-'
-    '          case "trails" -> "module_trails";\\n'
-'
-    '          case "particles" -> "module_particles";\\n'
-'
-    '          case "hitbox customizer" -> "module_hitbox";\\n'
-'
-    '          case "jump circles" -> "module_jump_circles";\\n'
-'
-    '          case "zoom" -> "module_zoom";\\n'
-'
-    '          case "sprint" -> "module_sprint";\\n'
-'
-    '          case "elytra swap" -> "module_elytra";\\n'
-'
-    '          case "world customizer" -> "module_world";\\n'
-'
-    '          case "sound controller" -> "module_sound";\\n'
-'
-    '          case "chest sorter" -> "module_inventory_sort";\\n'
-'
-    '          default -> null;\\n'
-'
-    '       };\\n'
-'
-    '    }\\n\\n'
-    '    private void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f2, float f3, float f4, float f5, float f6) {',
-    'module icon mapping')
+    'module card icon rendering'
+)
+replace_generated_once(
+    module_rows_path,
+    '   private void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f2, float f3, float f4, float f5, float f6) {',
+    '   private static String moduleIconForName(String name) {\n'
+    '      if (name == null) return null;\n'
+    '      return switch (name.toLowerCase(java.util.Locale.ROOT)) {\n'
+    '         case "crosshair" -> "module_crosshair";\n'
+    '         case "full bright" -> "module_fullbright";\n'
+    '         case "trails" -> "module_trails";\n'
+    '         case "particles", "world particles" -> "module_particles";\n'
+    '         case "hitbox customizer" -> "module_hitbox";\n'
+    '         case "jump circles" -> "module_jump_circles";\n'
+    '         case "zoom" -> "module_zoom";\n'
+    '         case "sprint" -> "module_sprint";\n'
+    '         case "elytra swap" -> "module_elytra";\n'
+    '         case "world customizer" -> "module_world";\n'
+    '         case "sound controller" -> "module_sound";\n'
+    '         case "chest sorter" -> "module_inventory_sort";\n'
+    '         default -> null;\n'
+    '      };\n'
+    '   }\n\n'
+    '   private void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f2, float f3, float f4, float f5, float f6) {',
+    'module icon mapping'
+)
 
-# Add subtle branded art to the selected-module settings panel, behind its controls.
 settings_panel_path = java_root / 'ai' / 'derco' / 'gui' / 'modules' / 'ModuleSettingsPanel.java'
-replace_generated_once(settings_panel_path,
+replace_generated_once(
+    settings_panel_path,
     '            renderer2D.a(f8, f9, f6, f7, 12.0F * fMax, bg, bg, bg, bg, MatrixStackVar);',
-    '            renderer2D.a(f8, f9, f6, f7, 12.0F * fMax, bg, bg, bg, bg, MatrixStackVar);\\n'
-    '            IconTextureRegistry.TextureInfo panelArt = IconTextureRegistry.getInfo("panel_selected_module");\\n'
-    '            if (panelArt != null) {\\n'
-    '               float panelArtHeight = Math.min(f7, f6 / 4.0F);\\n'
-    '               renderer2D.a(panelArt.a(), f8, f9, f6, panelArtHeight, new Color(255, 255, 255, Math.min(170, i3)), MatrixStackVar);\\n'
+    '            renderer2D.a(f8, f9, f6, f7, 12.0F * fMax, bg, bg, bg, bg, MatrixStackVar);\n'
+    '            float brandArtHeight = Math.min(f7, 28.0F * fMax);\n'
+    '            if (brandArtHeight > 1.0F) {\n'
+    '               renderer2D.a(IconTextureRegistry.get("panel_selected_module"), f8, f9, f6, brandArtHeight, new Color(255, 255, 255, Math.min(120, i3)), MatrixStackVar);\n'
     '            }',
-    'selected-module panel art')
+    'selected-module panel art'
+)
 
-# Validate every icon registration against the final, post-rebrand resource namespace.
+# Validate every hard-coded registry path after all brand assets have been copied.
 registry_source = registry_path.read_text(encoding='utf-8')
-for registered_resource in re.findall(r'register\\(\\s*"[^"]+"\\s*,\\s*"([^"]+)"\\s*\\)', registry_source):
-    if not (SRC / 'resources' / 'assets' / 'dercovisuals' / registered_resource).is_file():
-        raise SystemExit(f'IconTextureRegistry points to a missing PNG: {registered_resource}')
+for registered_resource in re.findall(r'register\(\s*"[^"]+"\s*,\s*"([^"]+)"\s*\)', registry_source):
+    resource_path = SRC / 'resources' / 'assets' / 'dercovisuals' / registered_resource
+    if not resource_path.is_file():
+        raise SystemExit('IconTextureRegistry points to a missing asset: ' + registered_resource)
 
 # Validate generated JSON resources, Mixin source references, and the version token
 # before handing the source tree to Gradle. Compilation does not parse these runtime
