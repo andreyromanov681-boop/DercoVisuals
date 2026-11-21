@@ -237,3 +237,28 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - The first two intermediate CI attempts (#68 and #69) stopped in the generator's guarded patch stage because the initial patch expected post-rebrand filenames before that transformation had run. The replacement patch now uses the actual upstream pulseicon.ttf and pulse_icons.ttf anchors and passes source generation.
 - pulse-src.zip, main, and other branches were not modified. No credentials or Pastebin API keys were added.
 - Next: verify the final CI build artifact, inspect the remapped FontManager resource strings and packaged font entries, then ask the user to test startup with the new JAR.
+
+
+## 2026-11-21 — DercoVisuals original icon and visual pack
+
+- Added an original electric-blue/cyan visual identity: app tile, transparent D monogram,
+  DercoVisuals wordmark, ClickGUI watermark/icon, and account-modal background.
+- Added nine category illustrations (the three current UI categories plus six additional
+  thematic sets), thirteen HUD pictograms, twelve module pictograms, and two selected-module
+  panel accents. The generated pack contains 42 non-empty, distinct PNG files.
+- Artwork source of truth: `tools/assets/generate_derco_assets.py` and its adjacent
+  `.partNN` source fragments. Output is generated under `tools/assets/png/` and copied
+  by `tools/prepare_pulse_foundation.py` into `assets/dercovisuals/`.
+- Build-time dependency is pinned in `tools/assets/requirements.txt`; CI installs it before
+  running the generator. The generator validates the manifest count and every registered
+  icon path before Gradle compilation.
+- Updated Fabric metadata icon path to `assets/dercovisuals/textures/icon.png`.
+- Added pictograms to the existing Visuals/HUD/Utilities category rail, selected feature
+  module rows, and selected-module settings header. Combat/Movement/Render/Player/World/Misc
+  remain theme icon sets, not new enabled menu categories.
+- The six previously missing texture paths are supplied at their registered names:
+  `textures/icon.png`, `textures/ai.derco.png`, `textures/derco_logo.png`,
+  `textures/clickgui/derco_water.png`, `textures/clickgui/derco_ico.png`, and
+  `textures/account_modal.png`.
+- Change set is isolated to `agent/derco-icons` targeting `pulse-foundation`.
+  `main` and `pulse-src.zip` were not modified. CI/JAR verification is pending PR build.
