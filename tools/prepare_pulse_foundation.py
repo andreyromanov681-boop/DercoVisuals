@@ -383,9 +383,9 @@ patch_generated_java('ai/derco/render/font/FontRenderer.java', (
 # every unsupported character in a 256-codepoint page.
 patch_generated_java('ai/derco/render/font/FontGlyphAtlas.java', (
     ('private final Font baseFont;',
-     'private final Font baseFont;\\n   private final Font fallbackFont;'),
-    ('this.baseFont = font;\\n      this.a = IdentifierVar;',
-     'this.baseFont = font;\\n      this.fallbackFont = new Font(Font.SANS_SERIF, Font.PLAIN, Math.max(1, font.getSize()));\\n      this.a = IdentifierVar;'),
+     'private final Font baseFont;\n   private final Font fallbackFont;'),
+    ('this.baseFont = font;\n      this.a = IdentifierVar;',
+     'this.baseFont = font;\n      this.fallbackFont = new Font(Font.SANS_SERIF, Font.PLAIN, Math.max(1, font.getSize()));\n      this.a = IdentifierVar;'),
     ('return this.baseFont.canDisplay(c) ? this.baseFont : new Font("SansSerif", 0, this.baseFont.getSize());',
      'return this.baseFont.canDisplay(c) ? this.baseFont : this.fallbackFont;'),
 ))
