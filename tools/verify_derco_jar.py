@@ -80,18 +80,18 @@ def main() -> None:
         fail("FriendStore legacy ConfigState.FriendHistoryState migration is missing")
 
     friends_panel = (generated_java / "gui/friends/FriendsPanel.java").read_text(encoding="utf-8")
-    remove_match = re.search(
-        r"public void b\\(HistoryEntry historyEntry\\) \\{(.*?)\\n   \\}",
-        friends_panel,
-        re.S,
-    )
-    if remove_match is None:
-        fail("FriendsPanel friend-removal handler is missing")
-    remove_body = remove_match.group(1)
+    remove_signature = "public void b(HistoryEntry historyEntry) {"
+    if friends_panel.count(remove_signature) != 1:
+        fail("FriendsPanel friend-removal handler is missing or duplicated")
+    remove_start = friends_panel.find(remove_signature)
+    remove_end = friends_panel.find("\\n   }", remove_start)
+    if remove_end < 0:
+        fail("FriendsPanel friend-removal handler is incomplete")
+    remove_body = friends_panel[remove_start:remove_end]
     persistence_guard = "if (!FriendStore.remove(name)) return;"
-    if persistence_guard not in remove_body:
+    guard_index = remove_body.find(persistence_guard)
+    if guard_index < 0:
         fail("FriendsPanel must confirm persistent friend removal before updating the UI")
-    guard_index = remove_body.index(persistence_guard)
     ui_removals = [remove_body.find(anchor) for anchor in ("this.r.removeIf", "this.s.removeIf")]
     if any(position < 0 or position < guard_index for position in ui_removals):
         fail("FriendsPanel removes friend cards before persistent removal succeeds")
