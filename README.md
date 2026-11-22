@@ -1,21 +1,21 @@
 # DercoVisuals
 
-[![Build](https://github.com/andreyromanov681-boop/DercoVisuals/actions/workflows/ci.yml/badge.svg?branch=pulse-foundation)](https://github.com/andreyromanov681-boop/DercoVisuals/actions/workflows/ci.yml?query=branch%3Apulse-foundation)
+[![Build](https://github.com/andreyromanov681-boop/DercoVisuals/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/andreyromanov681-boop/DercoVisuals/actions/workflows/ci.yml?query=branch%3Amain)
 
 **DercoVisuals** — бесплатный клиентский мод для **Minecraft Java 1.21.11 + Fabric**. Требуется **Java 21**. Проект не использует телеметрию, рекламу, подписки или обязательную авторизацию.
 
-> **Актуальная разработка:** ветка `pulse-foundation`. В данный момент GitHub открывает репозиторий на `main` по умолчанию. Чтобы увидеть этот актуальный код, выберите `pulse-foundation` в переключателе веток или откройте [активную ветку напрямую](https://github.com/andreyromanov681-boop/DercoVisuals/tree/pulse-foundation). `main` оставлена без изменений.
+> **Актуальная версия находится в `main`.** Ветки `main` и `pulse-foundation` синхронизированы и указывают на один и тот же проверенный код. Старое состояние `main`, существовавшее до синхронизации 22 ноября 2026 года, сохранено в ветке `main-before-pulse-foundation-2026-11-22`.
 
 ## Текущее состояние
 
-Последняя подтверждённая сборка: **CI #120**, commit `ef4e75ca85c81c1ff7967ec6bc1c59ff4639e656`.
+Последняя подтверждённая сборка: **CI #121**, commit `e9117c9c9962c57b89fab1e68f915ade55ad9c16`.
 
 - Java 21 / Gradle build — успешно.
 - `tools/verify_derco_jar.py` — успешно.
 - Проверка JAR и загрузка CI-артефакта — успешно.
 - Запуск Minecraft-клиента вручную в рамках этой проверки не выполнялся.
 
-[Открыть последнюю успешную сборку #120](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45006063164) · [Все сборки ветки](https://github.com/andreyromanov681-boop/DercoVisuals/actions?query=branch%3Apulse-foundation)
+[Открыть последнюю успешную сборку #121](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45009314410) · [Все сборки ветки main](https://github.com/andreyromanov681-boop/DercoVisuals/actions?query=branch%3Amain)
 
 ## ClickGUI
 

@@ -394,3 +394,12 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Added the latest verified CI #120 link, CI badge, Java 21 build and mandatory JAR-verification instructions, and a clear note that in-game startup was not tested.
 - Documented that GitHub still defaults to `main`, while the active implementation is on `pulse-foundation`; the README directs maintainers to the active branch and explains that the rolling `latest` Release is not yet synchronized with the current branch.
 - `main` and `pulse-src.zip` remain untouched. The GitHub integration used here does not expose the repository-settings action needed to change the default branch. Because `main` and `pulse-foundation` have no common ancestor, a normal pull request cannot connect them.
+
+
+## 2026-11-22 — Synchronize main with the latest verified pulse-foundation snapshot
+
+- The maintainer explicitly requested that `main` contain the latest version previously implemented on `pulse-foundation`.
+- CI run [#121](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45009314410) passed Java 21, source generation and all feature layers, `gradle build --no-daemon`, `tools/verify_derco_jar.py`, and CI artifact upload for source/documentation HEAD `e9117c9c9962c57b89fab1e68f915ade55ad9c16`.
+- Before moving `main`, saved its former commit `56762f5e6fa69b2cef2147214cdca10ed05e1948` as branch `main-before-pulse-foundation-2026-11-22`.
+- Moved `main` to the exact same verified commit as `pulse-foundation`. The repository default branch remains `main`; both branches are now the same snapshot.
+- `pulse-src.zip` was not edited. This supersedes earlier handoff notes that said `main` must remain unchanged; that restriction was explicitly changed by the maintainer in this request.
