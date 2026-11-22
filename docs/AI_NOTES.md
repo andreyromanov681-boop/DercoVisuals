@@ -376,3 +376,13 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Removed the redundant second forwarding method; the remaining implementation handles the interface key callback. Mouse interactions continue through the separate float-coordinate ClickGuiTab callbacks.
 - Corrected the generated screen close path to call `SettingsTab.onScreenClose()` (both marker editor/list cleanup methods), while switching away from Settings calls only `onTabExit()`, matching the previous MarkersTab lifecycle.
 - The failed CI run did not produce a runtime JAR. A corrected Java 21 build and JAR verifier run are pending.
+
+
+## 2026-11-22 — Requested ClickGUI and category migration verified
+
+- Corrected SettingsTab's duplicate Java overload after CI run #118 reported the duplicate `a(int, int, int)` signature. The current layer keeps a single interface key callback and uses the separate float-coordinate input callbacks for mouse interaction.
+- GitHub Actions run [#119](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45005819728) passed on commit `cdcd535aa678f9cf51cb49a81ec22218b9192b8d`: Java 21 setup, generator, all feature layers, `gradle build --no-daemon`, `tools/verify_derco_jar.py`, and artifact upload succeeded.
+- Downloaded and inspected the runtime JAR from artifact `14747901474`: `DercoVisuals-1.0.0.jar`, 16,640,717 bytes; SHA-256 `132bb5b9379255d6f12b1a15e9dcecdde21a4d5d8a3e747b4fc691df7d857ac7`. Fabric metadata reports `dercovisuals` 1.0.0 targeting Minecraft `~1.21.11`. `SettingsTab`, FriendStore, FriendLookup, NoFriendDamage, NoFriendDamageMixin and NoFriendDamageModule are present. Both badge locale strings are packaged; the client mixin is registered exactly once.
+- Category audit from generated ModuleInfo annotations: PvP 5 modules, Visuals 32, Utility 16, HUD 13, Helper 13, Other 9 (88 modules total including NoFriendDamage).
+- No Minecraft client was launched. Actual GUI interaction, legacy migration on a real user's old config directory, and runtime Mixin behavior remain untested in-game.
+- `main` and `pulse-src.zip` remain untouched.
