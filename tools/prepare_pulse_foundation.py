@@ -1879,6 +1879,14 @@ patch_generated_java('ai/derco/hud/elements/TargetHudElement.java', (
      'private static final Color BAR_COLOR = ai.derco.hud.core.HudTheme.ACCENT;'),
     ('private static final Color BAR_GLOW = new Color(95, 65, 240, 60);',
      'private static final Color BAR_GLOW = ai.derco.hud.core.HudTheme.ACCENT_GLOW;'),
+    ('private final AnimationState healthAnimation = new AnimationState();',
+     'private final AnimationState healthAnimation = new AnimationState();\\n   private int cachedHealthTenths = Integer.MIN_VALUE;\\n   private String cachedHealthText = "HP / 20,0";'),
+    ("            String health = \\"HP / \\" + String.format(Locale.ROOT, \\"%.1f\\", Math.max(0.0F, this.targetHealth)).replace('.', ',');\\n            healthFont.a(health, textX, y + 22.0F * scale, withAlpha(HEALTH_TEXT, alpha), matrices);",
+     "            healthFont.a(this.cachedHealthText, textX, y + 22.0F * scale, withAlpha(HEALTH_TEXT, alpha), matrices);"),
+    ('         this.targetHealth = Math.max(0.0F, currentTarget.getHealth());\\n         this.targetMaxHealth = Math.max(1.0F, currentTarget.getMaxHealth());',
+     '         this.targetHealth = Math.max(0.0F, currentTarget.getHealth());\\n         this.updateCachedHealthText();\\n         this.targetMaxHealth = Math.max(1.0F, currentTarget.getMaxHealth());'),
+    ('   private void updateTargetIdentity(LivingEntity entity) {',
+     '   private void updateCachedHealthText() {\\n      int tenths = Math.round(Math.max(0.0F, this.targetHealth) * 10.0F);\\n      if (tenths == this.cachedHealthTenths) return;\\n      this.cachedHealthTenths = tenths;\\n      this.cachedHealthText = "HP / " + String.format(Locale.ROOT, "%.1f", Math.max(0.0F, this.targetHealth)).replace(\\'.\\', \\',\\');\\n   }\\n\\n   private void updateTargetIdentity(LivingEntity entity) {'),
 ))
 
 patch_generated_java('ai/derco/hud/elements/InventoryHudElement.java', (
