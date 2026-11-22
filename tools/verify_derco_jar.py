@@ -89,6 +89,9 @@ def main() -> None:
         fail("Potion HUD sorting setting is missing or has unexpected modes/default")
 
     potions_element = (generated_java / "hud/elements/PotionsHudElement.java").read_text(encoding="utf-8")
+    if "ArrayList<PotionsHudElement.EffectEntry> arrayList = new ArrayList<>();" not in potions_element:
+        fail("Potion HUD effect collection must retain its typed list declaration")
+
     potion_sort_start = potions_element.find(
         "int sortMode = potionsHud != null ? potionsHud.sortMode() : 0;"
     )

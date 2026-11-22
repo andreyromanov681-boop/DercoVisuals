@@ -446,6 +446,38 @@ patch_generated_java('ai/derco/hud/elements/HotkeysHudElement.java', (
      'private List<HotkeysHudElement.HotkeySnapshot> x() {\n      ArrayList<HotkeysHudElement.HotkeySnapshot> arrayList = new ArrayList<>();'),
 ))
 patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
+    ('private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList arrayList = new ArrayList();',
+     'private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList<PotionsHudElement.EffectEntry> arrayList = new ArrayList<>();'),
+))
+patch_generated_java('ai/derco/modules/hud/PotionsHud.java', (
+    ('import ai.derco.settings.SliderSetting;\n',
+     'import ai.derco.settings.ModeSetting;\nimport ai.derco.settings.SliderSetting;\n'),
+    ('   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);\n\n   public PotionsHud() {',
+     '''   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);
+    private final SliderSetting maxVisibleEffects = new SliderSetting(
+       "Макс. эффектов", "Количество активных эффектов, одновременно отображаемых в HUD.", 6.0F, 1.0F, 12.0F, 1.0F
+    );
+    private final ModeSetting sortMode = new ModeSetting(
+       "Сортировка", "Порядок отображения активных эффектов.",
+       new String[]{"Скоро закончатся", "Дольше действуют", "По названию"}, 0
+    );
+
+    public PotionsHud() {'''),
+    ('   public SliderSetting n() {\n      return this.scale;\n   }\n}',
+     '''   public SliderSetting n() {
+       return this.scale;
+    }
+
+    public int maxVisibleEffects() {
+       return this.maxVisibleEffects.roundedInt();
+    }
+
+    public int sortMode() {
+       return this.sortMode.k();
+    }
+ }'''),
+))
+patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
     ('      arrayList.sort(Comparator.comparingInt(effectEntry -> effectEntry.d));\n      return arrayList;',
      '''      PotionsHud potionsHud = ModuleRegistry.POTIONS_HUD;
       int sortMode = potionsHud != null ? potionsHud.sortMode() : 0;
