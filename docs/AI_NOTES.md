@@ -431,6 +431,6 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 ## 2026-11-22 — Configurable Potion HUD sorting
 
 - Added a Russian ClickGUI ModeSetting to Potion HUD with three choices: soonest-expiring first (default), longest-lasting first, and alphabetical by localized effect label. The default preserves the existing order.
-- Applied the selected comparator before the existing maximum-visible-effects limit, so the cap selects entries from the chosen order. The module's existing settings collector and LocalConfigManager already persist ModeSetting values.
+- Applied the selected comparator before the existing maximum-visible-effects limit, so the cap selects entries from the chosen order. Negative durations (the infinite-effect sentinel) are treated as infinite: they sort last in soonest-expiring mode and first in longest-lasting mode. The module's existing settings collector and LocalConfigManager already persist ModeSetting values.
 - Extended tools/verify_derco_jar.py to verify the available modes/default, each comparator branch, and sort-before-limit ordering in generated Java. No new dependencies or Minecraft API calls are introduced.
-- Java 21 / Gradle CI and in-game HUD interaction are pending verification for this commit.
+- Initial implementation commit `1b784fc5dbdebc8e07330b9d4fb72c7f50512483` passed GitHub Actions run [#130](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45025974624), including Java 21 source generation, Gradle build, JAR verification and artifact upload. This follow-up corrects the infinite-duration ordering edge case; its CI is pending. In-game HUD interaction and settings persistence across a real client restart remain unverified.

@@ -93,11 +93,15 @@ def main() -> None:
         "int sortMode = potionsHud != null ? potionsHud.sortMode() : 0;"
     )
     potion_shortest = potions_element.find(
-        "arrayList.sort(Comparator.comparingInt(effectEntry -> effectEntry.d));",
+        "arrayList.sort(Comparator.comparingInt(effectEntry ->",
+        potion_sort_start,
+    )
+    potion_infinite_guard = potions_element.find(
+        "effectEntry.d < 0 ? Integer.MAX_VALUE : effectEntry.d",
         potion_sort_start,
     )
     potion_longest = potions_element.find(
-        "Comparator.comparingInt((PotionsHudElement.EffectEntry effectEntry) -> effectEntry.d).reversed()",
+        "effectEntry.d < 0 ? Integer.MAX_VALUE : effectEntry.d).reversed()",
         potion_sort_start,
     )
     potion_alphabetical = potions_element.find(
@@ -112,6 +116,7 @@ def main() -> None:
     if (
         potion_sort_start < 0
         or min(potion_shortest, potion_longest, potion_alphabetical) < potion_sort_start
+        or potion_infinite_guard < potion_sort_start
         or potion_limit < max(potion_shortest, potion_longest, potion_alphabetical)
         or potion_return < potion_limit
     ):
