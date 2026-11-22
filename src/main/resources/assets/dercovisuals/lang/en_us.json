@@ -2,5 +2,6 @@
   "key.dercovisuals.menu": "Open DercoVisuals menu",
   "key.dercovisuals.fullbright": "Toggle Fullbright",
   "key.dercovisuals.zoom": "Zoom (hold)",
-  "key.category.dercovisuals.main": "DercoVisuals"
+  "key.category.dercovisuals.main": "DercoVisuals",
+  "module.dercovisuals.no_friend_damage.always_enabled": "Always enabled"
 }

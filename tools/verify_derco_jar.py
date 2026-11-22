@@ -59,6 +59,30 @@ def main() -> None:
     if not REQUIRED.issubset(generated):
         fail("asset manifest is missing one or more mandatory legacy texture paths")
 
+    generated_java = ROOT / "src" / "main" / "java" / "ai" / "derco"
+    tab_enum = (generated_java / "gui/core/ClickGuiTabType.java").read_text(encoding="utf-8")
+    tab_values = re.findall(r"^\s*(MODULES|FRIENDS|SETTINGS)\(", tab_enum, re.M)
+    if tab_values != ["MODULES", "FRIENDS", "SETTINGS"]:
+        fail(f"ClickGUI must expose exactly MODULES, FRIENDS, SETTINGS in order; got {tab_values}")
+
+    category_enum = (generated_java / "module/ModuleCategory.java").read_text(encoding="utf-8")
+    category_values = re.findall(r"^\s*(PVP|VISUALS|UTILITIES|HUD|HELPER|OTHER)\(", category_enum, re.M)
+    if category_values != ["PVP", "VISUALS", "UTILITIES", "HUD", "HELPER", "OTHER"]:
+        fail(f"module category order is unexpected: {category_values}")
+
+    modules_tab = (generated_java / "gui/modules/ModulesTab.java").read_text(encoding="utf-8")
+    expected_categories = ["PvP", "Visuals", "Utility", "HUD", "Helper", "Other"]
+    if not all(f'"{label}"' in modules_tab for label in expected_categories):
+        fail("ModulesTab does not expose all six requested categories")
+
+    friends_store = (generated_java / "gui/friends/FriendStore.java").read_text(encoding="utf-8")
+    if "migrateLegacyFriendHistory()" not in friends_store or "ConfigJsonCodec.a(json)" not in friends_store:
+        fail("FriendStore legacy ConfigState.FriendHistoryState migration is missing")
+
+    row_renderer = (generated_java / "gui/modules/ModuleRowRenderer.java").read_text(encoding="utf-8")
+    if "module.dercovisuals.no_friend_damage.always_enabled" not in row_renderer:
+        fail("NoFriendDamage always-enabled badge is missing from the module row renderer")
+
     with ZipFile(jars[0]) as jar:
         names = set(jar.namelist())
         required_classes = {
@@ -68,6 +92,7 @@ def main() -> None:
             "ai/derco/protection/NoFriendDamage.class",
             "ai/derco/mixin/NoFriendDamageMixin.class",
             "ai/derco/modules/pvp/NoFriendDamageModule.class",
+            "ai/derco/gui/core/SettingsTab.class",
         }
         missing_classes = sorted(required_classes - names)
         if missing_classes:
@@ -99,6 +124,14 @@ def main() -> None:
             fail(f"Fabric metadata icon does not resolve inside the JAR: {icon_path!r}")
         if icon_path != PREFIX + "textures/icon.png":
             fail(f"Fabric metadata icon points to an unexpected path: {icon_path!r}")
+
+        for locale, expected_label in (("en_us", "Always enabled"), ("ru_ru", "Всегда включён")):
+            lang_path = f"assets/dercovisuals/lang/{locale}.json"
+            if lang_path not in names:
+                fail(f"{locale}.json is missing from the runtime JAR")
+            lang_data = json.loads(jar.read(lang_path))
+            if lang_data.get("module.dercovisuals.no_friend_damage.always_enabled") != expected_label:
+                fail(f"{locale}.json does not contain the expected NoFriendDamage badge translation")
 
         for relative in sorted(refs | generated):
             path = PREFIX + relative

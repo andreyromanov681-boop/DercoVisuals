@@ -356,3 +356,15 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - No FPS or frame-time improvement is claimed because no in-game benchmark was run. The verified change removes formatter work from stable render frames; formatting now occurs only when the displayed health tenth changes.
 - Two intermediate CI attempts were corrected before this final passing build: run [#44992617047](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44992617047) targeted helper-only HUD files absent from the generated source tree, and run [#44992780880](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44992780880) exposed invalid escaping in the first generator patch. The helper-only patch was removed and the active generator patch was rewritten using explicit multiline Python strings. No build artifact was produced by either failed run.
 - Final code commit: `cf467e29bcdaf2e5ec46b88d0970277be5962c5e`. `main` and `pulse-src.zip` remain untouched.
+
+
+## 2026-11-22 — Three-tab ClickGUI, module categories and legacy friends migration
+
+- Assistant/tool: ChatGPT GPT-6 using the GitHub integration; all changes are implemented as a post-generation layer, not edits to generated Java.
+- Replaced the four top-level ClickGUI pages with exactly three: Modules, Friends and Settings. Settings hosts the pre-existing Markers and Configs pages as nested sections; their existing editing, save/load, notification-editor, filtering, input, and cleanup paths are delegated rather than removed.
+- Added module categories in the requested order: PvP, Visuals, Utility, HUD, Helper, Other. Existing utility modules were assigned by purpose; modules not moved remain in Utility. Existing HUD and Visuals implementations remain in their original categories.
+- Replaced the hidden NoFriendDamage toggle area with a localized blue “Always enabled” / “Всегда включён” badge. The protection remains forced on and has no switch.
+- Added first-run migration: only when friends.txt is absent, FriendStore scans the legacy local ConfigState JSON files (autosave and profiles), decodes ConfigState.FriendHistoryState through ConfigJsonCodec, normalizes names case-insensitively, writes a single friends.txt marker, and thereafter reads that file without re-importing the legacy history.
+- Added `tools/apply_gui_navigation_categories.py` to the generation pipeline. Extended `tools/verify_derco_jar.py` to verify exact tab/category order, required SettingsTab class, legacy migration wiring, NoFriendDamage badge source, and both packaged language keys.
+- `main` and `pulse-src.zip` were not edited. Java 21 Gradle build, JAR verifier and runtime CI result are pending.
+- In-game client startup, visual layout/interaction of nested Settings sections, the first-run migration against a real old config folder, and Mixin runtime behavior have not been tested in Minecraft.
