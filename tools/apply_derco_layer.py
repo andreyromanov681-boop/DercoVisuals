@@ -179,7 +179,7 @@ def patch_friend_panel() -> None:
    public void b(HistoryEntry historyEntry) {
    }
 """
-    new_methods = """   public void a(HistoryEntry historyEntry) {
+    new_add_method = """   public void a(HistoryEntry historyEntry) {
       if (historyEntry == null || !FriendStore.add(historyEntry.a())) return;
       this.r.add(historyEntry);
       FriendCard card = new FriendCard(historyEntry);
@@ -188,8 +188,8 @@ def patch_friend_panel() -> None:
       this.e();
       this.v.e();
    }
-
-   public void b(HistoryEntry historyEntry) {
+"""
+    old_remove_method = """   public void b(HistoryEntry historyEntry) {
       if (historyEntry == null) return;
       String name = historyEntry.a();
       this.r.removeIf(entry -> entry.a().equalsIgnoreCase(name));
@@ -199,9 +199,24 @@ def patch_friend_panel() -> None:
       this.v.e();
    }
 """
-    if new_methods not in source:
-        if old_methods not in source: fail("expected FriendsPanel add/remove stubs not found")
-        source = source.replace(old_methods, new_methods, 1)
+    new_remove_method = """   public void b(HistoryEntry historyEntry) {
+      if (historyEntry == null) return;
+      String name = historyEntry.a();
+      if (!FriendStore.remove(name)) return;
+      this.r.removeIf(entry -> entry.a().equalsIgnoreCase(name));
+      this.s.removeIf(card -> card.a().a().equalsIgnoreCase(name));
+      this.e();
+      this.v.e();
+   }
+"""
+    if new_add_method not in source:
+        if source.count(old_methods) != 1:
+            fail("expected original FriendsPanel add/remove stubs not found")
+        source = source.replace(old_methods, new_add_method + new_remove_method, 1)
+    elif new_remove_method not in source:
+        if source.count(old_remove_method) != 1:
+            fail("expected the previous FriendsPanel remove implementation not found")
+        source = source.replace(old_remove_method, new_remove_method, 1)
 
     old_init = "      this.w = new PanelFadeOverlay(25, 5.0F, 9.0F);\n"
     new_init = old_init + """      for (String name : FriendStore.getNames()) {

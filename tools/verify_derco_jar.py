@@ -79,6 +79,23 @@ def main() -> None:
     if "migrateLegacyFriendHistory()" not in friends_store or "ConfigJsonCodec.a(json)" not in friends_store:
         fail("FriendStore legacy ConfigState.FriendHistoryState migration is missing")
 
+    friends_panel = (generated_java / "gui/friends/FriendsPanel.java").read_text(encoding="utf-8")
+    remove_match = re.search(
+        r"public void b\\(HistoryEntry historyEntry\\) \\{(.*?)\\n   \\}",
+        friends_panel,
+        re.S,
+    )
+    if remove_match is None:
+        fail("FriendsPanel friend-removal handler is missing")
+    remove_body = remove_match.group(1)
+    persistence_guard = "if (!FriendStore.remove(name)) return;"
+    if persistence_guard not in remove_body:
+        fail("FriendsPanel must confirm persistent friend removal before updating the UI")
+    guard_index = remove_body.index(persistence_guard)
+    ui_removals = [remove_body.find(anchor) for anchor in ("this.r.removeIf", "this.s.removeIf")]
+    if any(position < 0 or position < guard_index for position in ui_removals):
+        fail("FriendsPanel removes friend cards before persistent removal succeeds")
+
     row_renderer = (generated_java / "gui/modules/ModuleRowRenderer.java").read_text(encoding="utf-8")
     if "module.dercovisuals.no_friend_damage.always_enabled" not in row_renderer:
         fail("NoFriendDamage always-enabled badge is missing from the module row renderer")
