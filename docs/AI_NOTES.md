@@ -340,3 +340,19 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Runtime JAR SHA-256: `f952614fec5551a49bcd06cd9fe4a800666effe7e31268f76ccb88b91e407735` (16,635,468 bytes). A Java 21 isolated test also verified local friend persistence, case-insensitive duplicate rejection/lookup, invalid-name rejection, reload and deletion.
 - No in-game Minecraft startup or live attack-filter smoke test was available, so Mixin behavior still needs confirmation in the user's client. The feature is client-side protection against locally initiated attacks to listed friends, not a guarantee against all server-side damage.
 - `main` and `pulse-src.zip` remain untouched.
+
+## 2026-11-22 — Cache Target HUD health text between displayed updates
+
+- Assistant/tool: ChatGPT GPT-6 using the connected GitHub integration, generated-source artifact inspection, and Java 21 verification.
+- Confirmed the actual CI-generated source tree comes from `pulse-src.zip`; the small checked-in helper classes `HudCache.java`, `DercoVisualsClient.java`, and `ExtraHudRenderer.java` are not present in that generated tree. Do not patch those helper-only files for production behavior. The correct source of truth for the active HUD implementation is `tools/prepare_pulse_foundation.py`.
+- Updated the generated `ai/derco/hud/elements/TargetHudElement.java` patch. The target HUD previously ran `String.format(Locale.ROOT, "%.1f", ...).replace('.', ',')` in the render method on every frame. It now stores the displayed health tenths and cached label, and formats the text only when the displayed one-decimal value changes.
+- The label preserves the existing `HP / X,Y` formatting. No layout, public setting, or target-selection behavior changed.
+- Validation:
+  - GitHub Actions run [#44992893391](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44992893391) passed source generation, Java 21 compilation, Gradle build/remap, JAR resource/metadata verification, and artifact upload.
+  - Inspected the generated Java artifact: the render method reads `cachedHealthText` and contains no `String.format` call; the formatter exists only behind the cached-tenths guard.
+  - Inspected the compiled runtime JAR with `javap`: the render method bytecode contains no `String.format` invocation and reads the cached field; the updater contains the early-return guard before formatting.
+  - Java 21 isolated equivalence check passed 100,000 random health samples against the previous one-decimal formatter.
+  - Runtime JAR: `DercoVisuals-1.0.0.jar`, 16,635,619 bytes, SHA-256 `e8672bde31e50b9f9188fda13ddd8c4ce0221517fca8bd8654709a107abe4319`; ZIP integrity passed.
+- No FPS or frame-time improvement is claimed because no in-game benchmark was run. The verified change removes formatter work from stable render frames; formatting now occurs only when the displayed health tenth changes.
+- Two intermediate CI attempts were corrected before this final passing build: run [#44992617047](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44992617047) targeted helper-only HUD files absent from the generated source tree, and run [#44992780880](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/44992780880) exposed invalid escaping in the first generator patch. The helper-only patch was removed and the active generator patch was rewritten using explicit multiline Python strings. No build artifact was produced by either failed run.
+- Final code commit: `cf467e29bcdaf2e5ec46b88d0970277be5962c5e`. `main` and `pulse-src.zip` remain untouched.
