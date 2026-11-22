@@ -403,3 +403,17 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Before moving `main`, saved its former commit `56762f5e6fa69b2cef2147214cdca10ed05e1948` as branch `main-before-pulse-foundation-2026-11-22`.
 - Moved `main` to the exact same verified commit as `pulse-foundation`. The repository default branch remains `main`; both branches are now the same snapshot.
 - `pulse-src.zip` was not edited. This supersedes earlier handoff notes that said `main` must remain unchanged; that restriction was explicitly changed by the maintainer in this request.
+
+
+## 2026-11-22 — Preserve Friends UI when persistence fails
+
+- Assistant/tool: ChatGPT automation.
+- Confirmed a persistence/UI consistency bug in the generated Friends tab. FriendStore.remove(name) removes the cached entry, writes friends.txt, and on an IOException restores the cached entry and returns false. The previous FriendsPanel.b(HistoryEntry) removed the visible history entry and card before calling FriendStore.remove, ignoring that failure result. A failed disk write therefore hid the friend in the current UI even though the friend remained in the store and could reappear after reopening the screen or restarting the client.
+- Fixed the source-of-truth layer in tools/apply_derco_layer.py: the panel now calls FriendStore.remove(name) first and updates its two UI collections only when persistence succeeds. The generator patch handles both the original Pulse no-op methods and the previously generated implementation.
+- Extended tools/verify_derco_jar.py to require exactly one friend-removal handler and verify that the persistence guard appears before both UI-removal operations.
+- GitHub Actions run #127 (https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45010204456) passed on commit 2f9ed6020f4a71413553f711ef118b26fbc99733: Java 21 setup, all source-generation layers, gradle build --no-daemon, JAR verification, and runtime artifact upload succeeded. The verifier reported 92 registered texture paths, 42 generated PNG assets, and valid friend/protection classes and Mixin registration.
+- Two intermediate runs (#125 and #126) compiled successfully but failed in the newly added verifier because its method-boundary matcher was over-escaped. The verifier was simplified to use a literal method signature and chr(10); run #127 confirms the corrected check passes.
+- Downloaded CI-generated Java artifact 14749497567 and independently checked that the generated FriendsPanel places the persistence guard before both list removals and that FriendStore restores the cached entry when save() fails. Local source-level assertions passed. A live Minecraft test with an actual filesystem write failure was not performed.
+- Local environment has JDK 21.0.12 but no system Gradle installation; the authoritative Gradle 9.2.1 / Temurin 21.0.13 build ran in GitHub Actions.
+- Only pulse-foundation was updated by this task. main remained at 2c3d64edbc7bb21cac835c696b4e2b3448a30fb2 during this fix, and pulse-src.zip was not modified.
+- Next: manually verify add/remove behavior in Minecraft and confirm the card remains visible if the config directory cannot be written.
