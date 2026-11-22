@@ -386,3 +386,11 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Category audit from generated ModuleInfo annotations: PvP 5 modules, Visuals 32, Utility 16, HUD 13, Helper 13, Other 9 (88 modules total including NoFriendDamage).
 - No Minecraft client was launched. Actual GUI interaction, legacy migration on a real user's old config directory, and runtime Mixin behavior remain untested in-game.
 - `main` and `pulse-src.zip` remain untouched.
+
+
+## 2026-11-22 — Refresh branch README as the current project entry point
+
+- Updated `README.md` on `pulse-foundation` to describe the current three-tab ClickGUI, six module categories, Settings subsections, local friend persistence/migration, and always-enabled NoFriendDamage badge.
+- Added the latest verified CI #120 link, CI badge, Java 21 build and mandatory JAR-verification instructions, and a clear note that in-game startup was not tested.
+- Documented that GitHub still defaults to `main`, while the active implementation is on `pulse-foundation`; the README directs maintainers to the active branch and explains that the rolling `latest` Release is not yet synchronized with the current branch.
+- `main` and `pulse-src.zip` remain untouched. The GitHub integration used here does not expose the repository-settings action needed to change the default branch. Because `main` and `pulse-foundation` have no common ancestor, a normal pull request cannot connect them.
