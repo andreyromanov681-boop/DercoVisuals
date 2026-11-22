@@ -84,7 +84,7 @@ def main() -> None:
     if friends_panel.count(remove_signature) != 1:
         fail("FriendsPanel friend-removal handler is missing or duplicated")
     remove_start = friends_panel.find(remove_signature)
-    remove_end = friends_panel.find("\\n   }", remove_start)
+    remove_end = friends_panel.find(chr(10) + "   }", remove_start)
     if remove_end < 0:
         fail("FriendsPanel friend-removal handler is incomplete")
     remove_body = friends_panel[remove_start:remove_end]
