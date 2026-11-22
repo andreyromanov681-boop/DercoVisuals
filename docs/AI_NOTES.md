@@ -368,3 +368,11 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Added `tools/apply_gui_navigation_categories.py` to the generation pipeline. Extended `tools/verify_derco_jar.py` to verify exact tab/category order, required SettingsTab class, legacy migration wiring, NoFriendDamage badge source, and both packaged language keys.
 - `main` and `pulse-src.zip` were not edited. Java 21 Gradle build, JAR verifier and runtime CI result are pending.
 - In-game client startup, visual layout/interaction of nested Settings sections, the first-run migration against a real old config folder, and Mixin runtime behavior have not been tested in Minecraft.
+
+
+## 2026-11-22 — Correct SettingsTab Java overload and close cleanup
+
+- CI run [#45005664465](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45005664465) confirmed the new generator step and feature-layer patching completed. Java 21 compilation then reported one source error: SettingsTab declared two methods with the same `a(int, int, int)` signature.
+- Removed the redundant second forwarding method; the remaining implementation handles the interface key callback. Mouse interactions continue through the separate float-coordinate ClickGuiTab callbacks.
+- Corrected the generated screen close path to call `SettingsTab.onScreenClose()` (both marker editor/list cleanup methods), while switching away from Settings calls only `onTabExit()`, matching the previous MarkersTab lifecycle.
+- The failed CI run did not produce a runtime JAR. A corrected Java 21 build and JAR verifier run are pending.

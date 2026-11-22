@@ -238,7 +238,7 @@ def patch_clickgui_navigation() -> None:
          settingsTab.onTabExit();
       }
 '''
-    replace_once(screen, old_cleanup, new_cleanup, "settings cleanup on close/reset", expected=2)
+    replace_once(screen, old_cleanup, new_cleanup.replace("onTabExit", "onScreenClose"), "settings cleanup on close/reset", expected=2)
 
     old_char = '''      } else if (clickGuiTabA instanceof MarkersTab && ((MarkersTab)clickGuiTabA).a(c2, i)) {
          return true;
@@ -427,11 +427,6 @@ public final class SettingsTab implements TabHost, ClickGuiTab {
     @Override
     public boolean a(int keyCode, int scanCode, int modifiers) {
         return selectedTab().a(keyCode, scanCode, modifiers);
-    }
-
-    @Override
-    public boolean a(int mouseX, int mouseY, int button) {
-        return selectedTab().a(mouseX, mouseY, button);
     }
 
     @Override
