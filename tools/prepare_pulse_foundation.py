@@ -479,6 +479,38 @@ patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
       }
       return arrayList;'''),
 ))
+patch_generated_java('ai/derco/modules/hud/CooldownsHud.java', (
+    ('   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);\n\n   public CooldownsHud() {',
+     '''   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);
+   private final SliderSetting maxVisibleCooldowns = new SliderSetting(
+      "Макс. кулдаунов", "Количество активных кулдаунов, одновременно отображаемых в HUD.", 4.0F, 1.0F, 8.0F, 1.0F
+   );
+
+   public CooldownsHud() {'''),
+    ('   public SliderSetting n() {\n      return this.scale;\n   }\n}',
+     '''   public SliderSetting n() {
+      return this.scale;
+   }
+
+   public int maxVisibleCooldowns() {
+      return this.maxVisibleCooldowns.roundedInt();
+   }
+}'''),
+))
+
+patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
+    ('      arrayList.sort(Comparator.comparingInt(cooldownSnapshot -> cooldownSnapshot.e));\n      return arrayList;',
+     '''      arrayList.sort(Comparator.comparingInt(cooldownSnapshot -> cooldownSnapshot.e));
+      var cooldownsHud = ModuleRegistry.COOLDOWNS_HUD;
+      if (cooldownsHud != null) {
+         int maxVisibleCooldowns = cooldownsHud.maxVisibleCooldowns();
+         if (arrayList.size() > maxVisibleCooldowns) {
+            arrayList.subList(maxVisibleCooldowns, arrayList.size()).clear();
+         }
+      }
+      return arrayList;'''),
+))
+
 patch_generated_java('ai/derco/gui/settings/ModeSettingWidget.java', (
     ('ArrayList arrayList = new ArrayList<>(this.v);',
      'ArrayList<Integer> arrayList = new ArrayList<>(this.v);'),

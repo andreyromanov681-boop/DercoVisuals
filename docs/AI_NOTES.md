@@ -417,3 +417,13 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Local environment has JDK 21.0.12 but no system Gradle installation; the authoritative Gradle 9.2.1 / Temurin 21.0.13 build ran in GitHub Actions.
 - Only pulse-foundation was updated by this task. main remained at 2c3d64edbc7bb21cac835c696b4e2b3448a30fb2 during this fix, and pulse-src.zip was not modified.
 - Next: manually verify add/remove behavior in Minecraft and confirm the card remains visible if the config directory cannot be written.
+
+
+## 2026-11-22 — Configurable Cooldowns HUD entry limit
+
+- Added a `Макс. кулдаунов` setting to the existing Cooldowns HUD module: default 4, minimum 1, maximum 8, step 1. The module's existing settings collector and local config serializer include the new slider automatically.
+- The generated Cooldowns HUD now applies the limit after sorting active cooldowns by remaining ticks, so the soonest-expiring cooldowns stay visible first. Existing entry animations handle rows entering and leaving the list.
+- Updated the JAR verifier to require the setting, its bounds, and the sort-before-trim behavior in the generated Java source. The source patch is kept in `tools/prepare_pulse_foundation.py`, the generator of record; generated Java is not edited directly.
+- Before editing, confirmed `pulse-foundation` HEAD `6d32ed84859fdb0854285b3075dc812c33a5993f` and successful CI run [#128](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45010433051). The exact generator anchors were each present once in the CI-generated Java artifact from that run.
+- Validation at commit time: source-anchor uniqueness checked against the CI-generated Java artifact. Java 21 Gradle build, JAR verifier and artifact upload are triggered by the commit and must be confirmed from its workflow run. Live Minecraft interaction and slider persistence across restart remain unverified.
+- Next: verify the slider in the in-game Cooldowns HUD settings panel and continue with an independent visual improvement.

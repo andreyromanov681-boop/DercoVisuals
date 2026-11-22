@@ -75,6 +75,31 @@ def main() -> None:
     if not all(f'"{label}"' in modules_tab for label in expected_categories):
         fail("ModulesTab does not expose all six requested categories")
 
+    cooldowns_module = (generated_java / "modules/hud/CooldownsHud.java").read_text(encoding="utf-8")
+    if (
+        '"Макс. кулдаунов"' not in cooldowns_module
+        or "4.0F, 1.0F, 8.0F, 1.0F" not in cooldowns_module
+        or "public int maxVisibleCooldowns()" not in cooldowns_module
+        or "this.maxVisibleCooldowns.roundedInt()" not in cooldowns_module
+    ):
+        fail("Cooldowns HUD configurable visible-entry limit is missing or has unexpected bounds")
+
+    cooldowns_element = (generated_java / "hud/elements/CooldownsHudElement.java").read_text(encoding="utf-8")
+    cooldown_sort = cooldowns_element.find(
+        "arrayList.sort(Comparator.comparingInt(cooldownSnapshot -> cooldownSnapshot.e));"
+    )
+    cooldown_limit = cooldowns_element.find(
+        "arrayList.subList(maxVisibleCooldowns, arrayList.size()).clear();"
+    )
+    cooldown_return = cooldowns_element.find("return arrayList;", cooldown_limit)
+    if (
+        "ModuleRegistry.COOLDOWNS_HUD" not in cooldowns_element
+        or cooldown_sort < 0
+        or cooldown_limit < cooldown_sort
+        or cooldown_return < cooldown_limit
+    ):
+        fail("Cooldowns HUD must sort by remaining time before applying the configured visible-entry limit")
+
     friends_store = (generated_java / "gui/friends/FriendStore.java").read_text(encoding="utf-8")
     if "migrateLegacyFriendHistory()" not in friends_store or "ConfigJsonCodec.a(json)" not in friends_store:
         fail("FriendStore legacy ConfigState.FriendHistoryState migration is missing")
