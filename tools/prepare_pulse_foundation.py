@@ -450,27 +450,44 @@ patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
      'private List<PotionsHudElement.EffectEntry> y() {\n      ArrayList<PotionsHudElement.EffectEntry> arrayList = new ArrayList<>();'),
 ))
 patch_generated_java('ai/derco/modules/hud/PotionsHud.java', (
+    ('import ai.derco.settings.SliderSetting;\n',
+     'import ai.derco.settings.ModeSetting;\nimport ai.derco.settings.SliderSetting;\n'),
     ('   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);\n\n   public PotionsHud() {',
      '''   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);
-   private final SliderSetting maxVisibleEffects = new SliderSetting(
-      "Макс. эффектов", "Количество активных эффектов, одновременно отображаемых в HUD.", 6.0F, 1.0F, 12.0F, 1.0F
-   );
+    private final SliderSetting maxVisibleEffects = new SliderSetting(
+       "Макс. эффектов", "Количество активных эффектов, одновременно отображаемых в HUD.", 6.0F, 1.0F, 12.0F, 1.0F
+    );
+    private final ModeSetting sortMode = new ModeSetting(
+       "Сортировка", "Порядок отображения активных эффектов.",
+       new String[]{"Скоро закончатся", "Дольше действуют", "По названию"}, 0
+    );
 
-   public PotionsHud() {'''),
+    public PotionsHud() {'''),
     ('   public SliderSetting n() {\n      return this.scale;\n   }\n}',
      '''   public SliderSetting n() {
-      return this.scale;
-   }
+       return this.scale;
+    }
 
-   public int maxVisibleEffects() {
-      return this.maxVisibleEffects.roundedInt();
-   }
-}'''),
+    public int maxVisibleEffects() {
+       return this.maxVisibleEffects.roundedInt();
+    }
+
+    public int sortMode() {
+       return this.sortMode.k();
+    }
+ }'''),
 ))
 patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
     ('      arrayList.sort(Comparator.comparingInt(effectEntry -> effectEntry.d));\n      return arrayList;',
-     '''      arrayList.sort(Comparator.comparingInt(effectEntry -> effectEntry.d));
-      PotionsHud potionsHud = ModuleRegistry.POTIONS_HUD;
+     '''      PotionsHud potionsHud = ModuleRegistry.POTIONS_HUD;
+      int sortMode = potionsHud != null ? potionsHud.sortMode() : 0;
+      if (sortMode == 1) {
+         arrayList.sort(Comparator.comparingInt((PotionsHudElement.EffectEntry effectEntry) -> effectEntry.d).reversed());
+      } else if (sortMode == 2) {
+         arrayList.sort(Comparator.comparing((PotionsHudElement.EffectEntry effectEntry) -> effectEntry.b, String.CASE_INSENSITIVE_ORDER));
+      } else {
+         arrayList.sort(Comparator.comparingInt(effectEntry -> effectEntry.d));
+      }
       if (potionsHud != null) {
          int maxVisibleEffects = potionsHud.maxVisibleEffects();
          if (arrayList.size() > maxVisibleEffects) {

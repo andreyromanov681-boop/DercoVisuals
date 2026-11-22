@@ -75,6 +75,48 @@ def main() -> None:
     if not all(f'"{label}"' in modules_tab for label in expected_categories):
         fail("ModulesTab does not expose all six requested categories")
 
+    potions_module = (generated_java / "modules/hud/PotionsHud.java").read_text(encoding="utf-8")
+    expected_potion_sort_modes = (
+        'new String[]{"Скоро закончатся", "Дольше действуют", "По названию"}, 0'
+    )
+    if (
+        "import ai.derco.settings.ModeSetting;" not in potions_module
+        or '"Сортировка"' not in potions_module
+        or expected_potion_sort_modes not in potions_module
+        or "public int sortMode()" not in potions_module
+        or "this.sortMode.k()" not in potions_module
+    ):
+        fail("Potion HUD sorting setting is missing or has unexpected modes/default")
+
+    potions_element = (generated_java / "hud/elements/PotionsHudElement.java").read_text(encoding="utf-8")
+    potion_sort_start = potions_element.find(
+        "int sortMode = potionsHud != null ? potionsHud.sortMode() : 0;"
+    )
+    potion_shortest = potions_element.find(
+        "arrayList.sort(Comparator.comparingInt(effectEntry -> effectEntry.d));",
+        potion_sort_start,
+    )
+    potion_longest = potions_element.find(
+        "Comparator.comparingInt((PotionsHudElement.EffectEntry effectEntry) -> effectEntry.d).reversed()",
+        potion_sort_start,
+    )
+    potion_alphabetical = potions_element.find(
+        "Comparator.comparing((PotionsHudElement.EffectEntry effectEntry) -> effectEntry.b, String.CASE_INSENSITIVE_ORDER)",
+        potion_sort_start,
+    )
+    potion_limit = potions_element.find(
+        "arrayList.subList(maxVisibleEffects, arrayList.size()).clear();",
+        potion_sort_start,
+    )
+    potion_return = potions_element.find("return arrayList;", potion_limit)
+    if (
+        potion_sort_start < 0
+        or min(potion_shortest, potion_longest, potion_alphabetical) < potion_sort_start
+        or potion_limit < max(potion_shortest, potion_longest, potion_alphabetical)
+        or potion_return < potion_limit
+    ):
+        fail("Potion HUD must support all three sort modes before applying its visible-entry limit")
+
     cooldowns_module = (generated_java / "modules/hud/CooldownsHud.java").read_text(encoding="utf-8")
     if (
         '"Макс. кулдаунов"' not in cooldowns_module

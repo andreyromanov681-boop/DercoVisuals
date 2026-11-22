@@ -427,3 +427,10 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Before editing, confirmed `pulse-foundation` HEAD `6d32ed84859fdb0854285b3075dc812c33a5993f` and successful CI run [#128](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45010433051). The exact generator anchors were each present once in the CI-generated Java artifact from that run.
 - Validation at commit time: source-anchor uniqueness checked against the CI-generated Java artifact. Java 21 Gradle build, JAR verifier and artifact upload are triggered by the commit and must be confirmed from its workflow run. Live Minecraft interaction and slider persistence across restart remain unverified.
 - Next: verify the slider in the in-game Cooldowns HUD settings panel and continue with an independent visual improvement.
+
+## 2026-11-22 — Configurable Potion HUD sorting
+
+- Added a Russian ClickGUI ModeSetting to Potion HUD with three choices: soonest-expiring first (default), longest-lasting first, and alphabetical by localized effect label. The default preserves the existing order.
+- Applied the selected comparator before the existing maximum-visible-effects limit, so the cap selects entries from the chosen order. The module's existing settings collector and LocalConfigManager already persist ModeSetting values.
+- Extended tools/verify_derco_jar.py to verify the available modes/default, each comparator branch, and sort-before-limit ordering in generated Java. No new dependencies or Minecraft API calls are introduced.
+- Java 21 / Gradle CI and in-game HUD interaction are pending verification for this commit.
