@@ -602,6 +602,26 @@ patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
       return arrayList;'''),
 ))
 
+# Reuse the active item-cooldown snapshot for preview state and rendering.
+# In editing screens the old preview predicate called x() independently from the
+# update and render paths, rebuilding the same cooldown list up to three times.
+patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
+    ('''   private boolean v() {
+      return Bool.from((this.a.currentScreen instanceof ChatScreen || this.a.currentScreen instanceof DercoVisualsClickGuiScreen) && this.x().isEmpty() ? 1 : 0);
+   }''',
+     '''   private boolean v() {
+      return Bool.from((this.a.currentScreen instanceof ChatScreen || this.a.currentScreen instanceof DercoVisualsClickGuiScreen) && this.Y.isEmpty() ? 1 : 0);
+   }'''),
+    ('''      this.w();
+      boolean zV = this.v();
+      List<CooldownsHudElement.CooldownSnapshot> listX = this.x();
+      this.Y = listX;''',
+     '''      this.w();
+      List<CooldownsHudElement.CooldownSnapshot> listX = this.x();
+      this.Y = listX;
+      boolean zV = this.v();'''),
+))
+
 patch_generated_java('ai/derco/gui/settings/ModeSettingWidget.java', (
     ('ArrayList arrayList = new ArrayList<>(this.v);',
      'ArrayList<Integer> arrayList = new ArrayList<>(this.v);'),

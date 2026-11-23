@@ -454,3 +454,12 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Yarn 1.21.11+build.3 maps these methods to `net/minecraft/client/render/Camera`: `setRotation(FF)V` and `clipToSpace(F)F`. Corrected both descriptors in the source-of-truth generator patch and set `require = 1` so a future mapping drift cannot silently disable the hooks.
 - Extended the JAR verifier to assert the exact generated selectors, required match counts, and runtime registration/class presence for `CameraMixin`.
 - Local simulation against the CI-generated Java artifact from run #134 found each old selector exactly once; after transformation both corrected descriptors appeared exactly once and the old owner was absent. A live Minecraft client/input test remains outstanding.
+
+
+## 2026-11-23 — Reuse Cooldowns HUD snapshot
+
+- Confirmed from generated Java artifact for CI #136 that `CooldownsHudElement.v()` called `x()` to determine whether the editing-screen placeholder should appear. The update method also called `x()` to build the rendered entries, and the render method called `v()` again. In ChatScreen / DercoVisualsClickGuiScreen this rebuilt and sorted the same cooldown snapshot up to three times per frame.
+- Updated the source-of-truth generator so the cooldown list is collected once, stored in the existing `Y` snapshot field, and used by both preview checks. Normal rendering and the editing placeholder keep their existing behavior.
+- Extended the JAR verifier to require exactly one `this.x()` call and verify that the snapshot assignment precedes the update/render preview checks.
+- Local dry-run against the generated Java artifact from CI #136 confirmed both generator anchors occur exactly once. After applying the transformation, the class contains one `this.x()` call; Gradle/CI validation and live Minecraft interaction are pending for the resulting commit.
+- This is a source-level reduction in repeated collection/sorting during HUD editing, not a measured FPS claim.

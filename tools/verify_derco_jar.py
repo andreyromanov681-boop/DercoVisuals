@@ -217,6 +217,25 @@ def main() -> None:
     ):
         fail("Cooldowns HUD must sort by remaining time before applying the configured visible-entry limit")
 
+    cooldown_snapshot_assignment = cooldowns_element.find("this.Y = listX;")
+    cooldown_update_preview = cooldowns_element.find("boolean zV = this.v();", cooldown_snapshot_assignment)
+    cooldown_render_start = cooldowns_element.find(
+        "public void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f, float f2)"
+    )
+    cooldown_render_update = cooldowns_element.find("this.a();", cooldown_render_start)
+    cooldown_render_preview = cooldowns_element.find("boolean zV = this.v();", cooldown_render_update)
+    if (
+        cooldowns_element.count("this.x()") != 1
+        or "&& this.Y.isEmpty()" not in cooldowns_element
+        or "&& this.x().isEmpty()" in cooldowns_element
+        or cooldown_snapshot_assignment < 0
+        or cooldown_update_preview < cooldown_snapshot_assignment
+        or cooldown_render_start < 0
+        or cooldown_render_update < cooldown_render_start
+        or cooldown_render_preview < cooldown_render_update
+    ):
+        fail("Cooldowns HUD must reuse its single collected cooldown snapshot for preview state and rendering")
+
     friends_store = (generated_java / "gui/friends/FriendStore.java").read_text(encoding="utf-8")
     if "migrateLegacyFriendHistory()" not in friends_store or "ConfigJsonCodec.a(json)" not in friends_store:
         fail("FriendStore legacy ConfigState.FriendHistoryState migration is missing")
