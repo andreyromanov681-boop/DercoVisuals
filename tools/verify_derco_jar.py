@@ -91,6 +91,23 @@ def main() -> None:
     potions_element = (generated_java / "hud/elements/PotionsHudElement.java").read_text(encoding="utf-8")
     if "ArrayList<PotionsHudElement.EffectEntry> arrayList = new ArrayList<>();" not in potions_element:
         fail("Potion HUD effect collection must retain its typed list declaration")
+    render_start = potions_element.find(
+        "public void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f, float f2)"
+    )
+    render_update = potions_element.find("this.a();", render_start)
+    render_preview = potions_element.find("boolean zW = this.previewPlaceholder;", render_start)
+    if (
+        "private boolean isEditingScreen()" not in potions_element
+        or "private boolean previewPlaceholder = false;" not in potions_element
+        or "this.isEditingScreen() && listY.isEmpty()" not in potions_element
+        or "this.previewPlaceholder = zW;" not in potions_element
+        or potions_element.count("this.y()") != 1
+        or "this.w()" in potions_element
+        or render_start < 0
+        or render_update < render_start
+        or render_preview < render_update
+    ):
+        fail("Potion HUD must build one active-effect snapshot per frame and reuse its preview state")
 
     potion_sort_start = potions_element.find(
         "int sortMode = potionsHud != null ? potionsHud.sortMode() : 0;"

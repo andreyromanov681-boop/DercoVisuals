@@ -1991,7 +1991,17 @@ patch_generated_java('ai/derco/hud/elements/ScoreboardHudElement.java', (
      'Color bgColor = ai.derco.hud.core.HudTheme.PANEL;'),
 ))
 
+# Reuse the active-effect snapshot for preview state and rendering. Previously, the
+# preview check and renderer each called y(), rebuilding and sorting the same list.
 patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
+    ('   private boolean ModelPart = false;\n   public static boolean n;',
+     '   private boolean ModelPart = false;\n   private boolean previewPlaceholder = false;\n   public static boolean n;'),
+    ('   private boolean w() {\n      return (this.a.currentScreen instanceof ChatScreen || this.a.currentScreen instanceof DercoVisualsClickGuiScreen) && this.y().isEmpty();\n   }',
+     '   private boolean isEditingScreen() {\n      return this.a.currentScreen instanceof ChatScreen || this.a.currentScreen instanceof DercoVisualsClickGuiScreen;\n   }'),
+    ('      this.u();\n      boolean zW = this.w();\n      List<PotionsHudElement.EffectEntry> listY = this.y();',
+     '      this.u();\n      List<PotionsHudElement.EffectEntry> listY = this.y();\n      boolean zW = this.isEditingScreen() && listY.isEmpty();\n      this.previewPlaceholder = zW;'),
+    ('            boolean zW = this.w();',
+     '            boolean zW = this.previewPlaceholder;'),
     ('private static final Color o = new Color(13, 13, 17);',
      'private static final Color o = ai.derco.hud.core.HudTheme.BACKGROUND_BOTTOM;'),
     ('private static final Color p = new Color(17, 17, 23);',
