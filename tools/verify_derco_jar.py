@@ -158,6 +158,40 @@ def main() -> None:
     ):
         fail("FreeLook and perspective-distance hooks must target the exact Yarn 1.21.11 Camera methods")
 
+    chat_hud_mixin = (generated_java / "mixin/ChatHudMixin.java").read_text(encoding="utf-8")
+    expected_chat_redirect = """   @Redirect(
+      require = 1,
+      method = "render",
+      at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/OrderedText;III)V")
+   )"""
+    if (
+        chat_hud_mixin.count(expected_chat_redirect) != 1
+        or "Lnet/minecraft/DrawContext;drawTextWithShadow" in chat_hud_mixin
+    ):
+        fail("Chat message animation must redirect the exact Yarn 1.21.11 DrawContext OrderedText overload")
+
+    tab_mixin = (generated_java / "mixin/PlayerListHudMixin.java").read_text(encoding="utf-8")
+    expected_tab_draw = """   @Redirect(
+      require = 1,
+      method = "render",
+      at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/Text;III)V")
+   )"""
+    expected_tab_encrypted = '@Redirect(require = 1, method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/ClientConnection;isEncrypted()Z"))'
+    expected_tab_footer = """   @Redirect(
+      require = 1,
+      method = "render",
+      at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/hud/PlayerListHud;footer:Lnet/minecraft/text/Text;", opcode = 180)
+   )"""
+    if (
+        tab_mixin.count(expected_tab_draw) != 1
+        or tab_mixin.count(expected_tab_encrypted) != 1
+        or tab_mixin.count(expected_tab_footer) != 1
+        or "Lnet/minecraft/DrawContext;drawTextWithShadow" in tab_mixin
+        or "Lnet/minecraft/ClientConnection;isEncrypted" in tab_mixin
+        or "Lnet/minecraft/PlayerListHud;footer" in tab_mixin
+    ):
+        fail("Tab customization must use exact Yarn 1.21.11 DrawContext, ClientConnection, and PlayerListHud selectors")
+
     cooldowns_module = (generated_java / "modules/hud/CooldownsHud.java").read_text(encoding="utf-8")
     if (
         '"Макс. кулдаунов"' not in cooldowns_module
@@ -219,6 +253,8 @@ def main() -> None:
             "ai/derco/modules/pvp/NoFriendDamageModule.class",
             "ai/derco/gui/core/SettingsTab.class",
             "ai/derco/mixin/CameraMixin.class",
+            "ai/derco/mixin/ChatHudMixin.class",
+            "ai/derco/mixin/PlayerListHudMixin.class",
         }
         missing_classes = sorted(required_classes - names)
         if missing_classes:
@@ -235,6 +271,10 @@ def main() -> None:
             fail("NoFriendDamageMixin must be registered exactly once in the client Mixin list")
         if client_mixins.count("CameraMixin") != 1:
             fail("CameraMixin must be registered exactly once in the client Mixin list")
+        if client_mixins.count("ChatHudMixin") != 1:
+            fail("ChatHudMixin must be registered exactly once in the client Mixin list")
+        if client_mixins.count("PlayerListHudMixin") != 1:
+            fail("PlayerListHudMixin must be registered exactly once in the client Mixin list")
         missing = sorted(PREFIX + ref for ref in refs if PREFIX + ref not in names)
         if missing:
             fail("registered resources absent from runtime JAR: " + ", ".join(missing))

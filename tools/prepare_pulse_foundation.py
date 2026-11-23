@@ -251,6 +251,31 @@ def patch_generated_java(relative_path, replacements):
         source = source.replace(old, new)
     path.write_text(source, encoding='utf-8')
 
+
+def patch_generated_java_idempotent(relative_path, replacements):
+    """Apply one exact migration, accepting either its original or fixed state."""
+    path = java_root / relative_path
+    if not path.exists():
+        raise SystemExit(f'Expected generated source is missing: {relative_path}')
+    source = path.read_text(encoding='utf-8', errors='replace')
+    changed = False
+    for old, new in replacements:
+        old_count = source.count(old)
+        new_count = source.count(new)
+        if old_count == 1 and new_count == 0:
+            source = source.replace(old, new, 1)
+            changed = True
+        elif old_count == 0 and new_count == 1:
+            continue
+        else:
+            raise SystemExit(
+                f'Expected exactly one old or fixed selector in {relative_path}; '
+                f'old={old_count}, fixed={new_count}'
+            )
+    if changed:
+        path.write_text(source, encoding='utf-8')
+
+
 # Correct Camera invocation owners using the exact Yarn 1.21.11 descriptors.
 # The old owner omitted client/render; require=0 silently disabled both camera hooks.
 patch_generated_java('ai/derco/mixin/CameraMixin.java', (
@@ -258,6 +283,44 @@ patch_generated_java('ai/derco/mixin/CameraMixin.java', (
      '@Redirect(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;setRotation(FF)V", ordinal = 0), require = 1)'),
     ('@ModifyArg(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/Camera;clipToSpace(F)F"), index = 0, require = 0)',
      '@ModifyArg(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;clipToSpace(F)F"), index = 0, require = 1)'),
+))
+
+patch_generated_java_idempotent('ai/derco/mixin/ChatHudMixin.java', (
+    ('''   @Redirect(
+      require = 0,
+      method = "render",
+      at = @At(value = "INVOKE", target = "Lnet/minecraft/DrawContext;drawTextWithShadow(Lnet/minecraft/TextRenderer;Lnet/minecraft/OrderedText;III)V")
+   )''',
+     '''   @Redirect(
+      require = 1,
+      method = "render",
+      at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/OrderedText;III)V")
+   )'''),
+))
+
+patch_generated_java_idempotent('ai/derco/mixin/PlayerListHudMixin.java', (
+    ('''   @Redirect(
+      require = 0,
+      method = "render",
+      at = @At(value = "INVOKE", target = "Lnet/minecraft/DrawContext;drawTextWithShadow(Lnet/minecraft/TextRenderer;Lnet/minecraft/Text;III)V")
+   )''',
+     '''   @Redirect(
+      require = 1,
+      method = "render",
+      at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/Text;III)V")
+   )'''),
+    ('@Redirect(require = 0, method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/ClientConnection;isEncrypted()Z"))',
+     '@Redirect(require = 1, method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/ClientConnection;isEncrypted()Z"))'),
+    ('''   @Redirect(
+      require = 0,
+      method = "render",
+      at = @At(value = "FIELD", target = "Lnet/minecraft/PlayerListHud;footer:Lnet/minecraft/Text;", opcode = 180)
+   )''',
+     '''   @Redirect(
+      require = 1,
+      method = "render",
+      at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/hud/PlayerListHud;footer:Lnet/minecraft/text/Text;", opcode = 180)
+   )'''),
 ))
 
 # Correct the ItemCooldownManager.Entry accessor against Yarn 1.21.11+build.3.
