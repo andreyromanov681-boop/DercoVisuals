@@ -142,6 +142,22 @@ def main() -> None:
     ):
         fail("Potion HUD must support all three sort modes before applying its visible-entry limit")
 
+    camera_mixin = (generated_java / "mixin/CameraMixin.java").read_text(encoding="utf-8")
+    expected_camera_rotation = (
+        '@Redirect(method = "update", at = @At(value = "INVOKE", '
+        'target = "Lnet/minecraft/client/render/Camera;setRotation(FF)V", ordinal = 0), require = 1)'
+    )
+    expected_camera_distance = (
+        '@ModifyArg(method = "update", at = @At(value = "INVOKE", '
+        'target = "Lnet/minecraft/client/render/Camera;clipToSpace(F)F"), index = 0, require = 1)'
+    )
+    if (
+        camera_mixin.count(expected_camera_rotation) != 1
+        or camera_mixin.count(expected_camera_distance) != 1
+        or "Lnet/minecraft/Camera;" in camera_mixin
+    ):
+        fail("FreeLook and perspective-distance hooks must target the exact Yarn 1.21.11 Camera methods")
+
     cooldowns_module = (generated_java / "modules/hud/CooldownsHud.java").read_text(encoding="utf-8")
     if (
         '"Макс. кулдаунов"' not in cooldowns_module
@@ -202,6 +218,7 @@ def main() -> None:
             "ai/derco/mixin/NoFriendDamageMixin.class",
             "ai/derco/modules/pvp/NoFriendDamageModule.class",
             "ai/derco/gui/core/SettingsTab.class",
+            "ai/derco/mixin/CameraMixin.class",
         }
         missing_classes = sorted(required_classes - names)
         if missing_classes:
@@ -216,6 +233,8 @@ def main() -> None:
             fail("runtime Mixin config has an unexpected package/client list")
         if client_mixins.count("NoFriendDamageMixin") != 1:
             fail("NoFriendDamageMixin must be registered exactly once in the client Mixin list")
+        if client_mixins.count("CameraMixin") != 1:
+            fail("CameraMixin must be registered exactly once in the client Mixin list")
         missing = sorted(PREFIX + ref for ref in refs if PREFIX + ref not in names)
         if missing:
             fail("registered resources absent from runtime JAR: " + ", ".join(missing))

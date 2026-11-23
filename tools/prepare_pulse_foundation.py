@@ -251,6 +251,15 @@ def patch_generated_java(relative_path, replacements):
         source = source.replace(old, new)
     path.write_text(source, encoding='utf-8')
 
+# Correct Camera invocation owners using the exact Yarn 1.21.11 descriptors.
+# The old owner omitted client/render; require=0 silently disabled both camera hooks.
+patch_generated_java('ai/derco/mixin/CameraMixin.java', (
+    ('@Redirect(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/Camera;setRotation(FF)V", ordinal = 0), require = 0)',
+     '@Redirect(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;setRotation(FF)V", ordinal = 0), require = 1)'),
+    ('@ModifyArg(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/Camera;clipToSpace(F)F"), index = 0, require = 0)',
+     '@ModifyArg(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;clipToSpace(F)F"), index = 0, require = 1)'),
+))
+
 # Correct the ItemCooldownManager.Entry accessor against Yarn 1.21.11+build.3.
 # The decompiler emitted a hybrid target name and intermediary record component names;
 # the named target and fields below are the exact mapped names for this Minecraft version.

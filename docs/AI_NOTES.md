@@ -447,3 +447,10 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Extended `tools/verify_derco_jar.py` to require exactly one `this.y()` call in the generated class, no legacy `this.w()` calls, and that render consumes the cached placeholder only after calling `a()`.
 - Local simulation against the generated Java artifact from CI #133 confirmed all four generator anchors occur exactly once, the transformed source has one `this.y()` call and zero `this.w()` calls, and the render update precedes cached-state use.
 - This is a source-level allocation/sort reduction in editing screens, not a measured FPS claim. The normal in-game path already short-circuited the old preview check and continues to build one active-effect snapshot per frame. No Minecraft client runtime test has been performed for this change.
+
+## 2026-11-23 — Restore FreeLook and perspective-distance camera hooks
+
+- Confirmed the runtime JAR includes and registers `CameraMixin`. In the CI-generated source artifact, both invocation selectors used the invalid owner `Lnet/minecraft/Camera;` and both injections had `require = 0`, so they could silently fail to apply.
+- Yarn 1.21.11+build.3 maps these methods to `net/minecraft/client/render/Camera`: `setRotation(FF)V` and `clipToSpace(F)F`. Corrected both descriptors in the source-of-truth generator patch and set `require = 1` so a future mapping drift cannot silently disable the hooks.
+- Extended the JAR verifier to assert the exact generated selectors, required match counts, and runtime registration/class presence for `CameraMixin`.
+- Local simulation against the CI-generated Java artifact from run #134 found each old selector exactly once; after transformation both corrected descriptors appeared exactly once and the old owner was absent. A live Minecraft client/input test remains outstanding.
