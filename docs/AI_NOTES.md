@@ -485,3 +485,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - GitHub Actions run [#140](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45371649270) passed on code commit `4fbdbc4dc2e1e0288eee1c27e05c702cf045aee9`: Java 21.0.13 setup, source generation and all feature layers, `gradle build --no-daemon`, JAR verification, and artifact upload. Gradle reports `compileTestJava` and `test` as `NO-SOURCE`; the repository has no Java unit tests.
 - Non-fatal Loom remap warnings remain for `modifiers`, `MapMarkerRenderer.a`, and `Framebuffer.beginWrite`; they are outside this change and were not treated as build failures.
 - Live filesystem-failure behavior was not exercised inside Minecraft. `main`, `pulse-src.zip`, and user config files were not modified.
+
+
+## 2026-11-24 — Add configurable absorption to Target HUD
+
+- Added a persisted BooleanSetting, \`Показывать поглощение\` (default enabled), to Target HUD. It uses the existing module settings collector and LocalConfigManager serialization; no new config format or dependency is required.
+- TargetHudElement now reads LivingEntity absorption through the named Yarn API, includes absorption in the effective health total, and renders it as a separate gold segment after normal health. The two segments animate independently.
+- The health label now appends the absorption amount only when the setting is enabled and the target has positive absorption. Cached tenths and the setting state prevent stale text when values or the toggle change.
+- The source-of-truth changes are in \`tools/prepare_pulse_foundation.py\`; \`tools/verify_derco_jar.py\` checks the setting, API call, animation, and gold segment in generated Java.
+- Validation before commit: exact-anchor transformation was simulated against the generated Java artifact from CI run #141; all expected module/renderer members and feature guards were present. The full Java 21 Gradle build and JAR verifier are delegated to the workflow triggered by this commit; its result must be checked before calling the change verified.
+- Not verified in a live Minecraft client. The visual segment, ClickGUI toggle, and persistence across restart still need an in-game smoke test.
+- Next: manually test Target HUD with a target that has absorption, toggle the setting off/on, and confirm config persistence.

@@ -142,9 +142,17 @@ def main() -> None:
     ):
         fail("Potion HUD must support all three sort modes before applying its visible-entry limit")
 
+    target_module = (generated_java / "modules/hud/TargetHud.java").read_text(encoding="utf-8")
+    if (
+        "import ai.derco.settings.BooleanSetting;" not in target_module
+        or 'new BooleanSetting("Показывать поглощение", true)' not in target_module
+        or "public BooleanSetting showAbsorption()" not in target_module
+    ):
+        fail("Target HUD absorption setting is missing or has an unexpected default")
+
     target_hud = (generated_java / "hud/elements/TargetHudElement.java").read_text(encoding="utf-8")
     target_update_start = target_hud.find("private void updateTarget() {")
-    target_update_end = target_hud.find("private void updateCachedHealthText()", target_update_start)
+    target_update_end = target_hud.find("private void updateCachedHealthText(boolean showAbsorption)", target_update_start)
     target_identity_start = target_hud.find("private void updateTargetIdentity(LivingEntity entity) {")
     target_identity_end = target_hud.find("private LivingEntity validTarget", target_identity_start)
     if min(target_update_start, target_update_end, target_identity_start, target_identity_end) < 0:
@@ -162,8 +170,18 @@ def main() -> None:
         or "if (entity != this.cachedNameEntity || customName != this.cachedCustomName)" not in target_identity_body
         or target_identity_body.count("entity.getName().getString()") != 1
         or "      }\n      this.skinTexture =" not in target_identity_body
+        or "private final AnimationState absorptionAnimation = new AnimationState();" not in target_hud
+        or "private float targetAbsorption;" not in target_hud
+        or "ModuleRegistry.TARGET_HUD.showAbsorption().get()" not in target_update_body
+        or "currentTarget.getAbsorptionAmount()" not in target_update_body
+        or target_update_body.count("this.updateCachedHealthText(showAbsorption);") != 1
+        or "this.absorptionAnimation.a(absorptionProgress, 0.15, Easing.h);" not in target_update_body
+        or "withAlpha(ABSORPTION_COLOR, alpha)" not in target_hud
+        or "Math.min(Math.max(0.0F, barWidth - healthWidth), barWidth * absorptionProgress)" not in target_hud
+        or "private int cachedAbsorptionTenths = Integer.MIN_VALUE;" not in target_hud
+        or "private boolean cachedShowAbsorption = true;" not in target_hud
     ):
-        fail("Target HUD must cache stable name text while continuing to refresh asynchronously loaded skin textures")
+        fail("Target HUD must display configurable absorption as a separately animated health-bar segment")
 
     camera_mixin = (generated_java / "mixin/CameraMixin.java").read_text(encoding="utf-8")
     expected_camera_rotation = (

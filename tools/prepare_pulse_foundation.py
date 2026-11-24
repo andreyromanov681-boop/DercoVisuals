@@ -2085,6 +2085,200 @@ patch_generated_java('ai/derco/hud/elements/TargetHudElement.java', (
 
 ))
 
+
+patch_generated_java('ai/derco/modules/hud/TargetHud.java', (
+    ('''import ai.derco.settings.SliderSetting;''',
+     '''import ai.derco.settings.BooleanSetting;
+import ai.derco.settings.SliderSetting;'''),
+    ('''   private final SliderSetting targetLifeTime = new SliderSetting("Время жизни таргета", 2.0F, 0.5F, 5.0F, 0.5F);''',
+     '''   private final SliderSetting targetLifeTime = new SliderSetting("Время жизни таргета", 2.0F, 0.5F, 5.0F, 0.5F);
+   private final BooleanSetting showAbsorption = new BooleanSetting("Показывать поглощение", true);'''),
+    ('''   public SliderSetting targetLifeTime() {
+      return this.targetLifeTime;
+   }''',
+     '''   public SliderSetting targetLifeTime() {
+      return this.targetLifeTime;
+   }
+
+   public BooleanSetting showAbsorption() {
+      return this.showAbsorption;
+   }'''),
+))
+
+patch_generated_java('ai/derco/hud/elements/TargetHudElement.java', (
+    ('''private static final Color BAR_GLOW = ai.derco.hud.core.HudTheme.ACCENT_GLOW;''',
+     '''private static final Color BAR_GLOW = ai.derco.hud.core.HudTheme.ACCENT_GLOW;
+   private static final Color ABSORPTION_COLOR = new Color(255, 190, 55, 245);'''),
+    ('''private final AnimationState healthAnimation = new AnimationState();''',
+     '''private final AnimationState healthAnimation = new AnimationState();
+   private final AnimationState absorptionAnimation = new AnimationState();'''),
+    ('''private int cachedHealthTenths = Integer.MIN_VALUE;
+   private String cachedHealthText = "HP / 20,0";''',
+     '''private int cachedHealthTenths = Integer.MIN_VALUE;
+   private int cachedAbsorptionTenths = Integer.MIN_VALUE;
+   private boolean cachedShowAbsorption = true;
+   private String cachedHealthText = "HP / 20,0";'''),
+    ('''private float targetHealth;
+   private float targetMaxHealth = 20.0F;''',
+     '''private float targetHealth;
+   private float targetAbsorption;
+   private float targetMaxHealth = 20.0F;'''),
+    ('''this.healthAnimation.d(1.0);''',
+     '''this.healthAnimation.d(1.0);
+      this.absorptionAnimation.d(0.0);'''),
+    ('''   private void updateTarget() {
+      LivingEntity currentTarget = this.validTarget(HudServiceRegistry.TARGETS.currentTarget());
+      if (currentTarget == null && this.isEditing()) {
+         currentTarget = this.a.player;
+      }
+
+      if (currentTarget != null) {
+         if (currentTarget != this.target) {
+            this.target = currentTarget;
+            float healthProgress = clamp01(currentTarget.getHealth() / Math.max(1.0F, currentTarget.getMaxHealth()));
+            this.healthAnimation.d(healthProgress);
+         }
+
+         this.targetHealth = Math.max(0.0F, currentTarget.getHealth());
+         this.updateCachedHealthText();
+         this.targetMaxHealth = Math.max(1.0F, currentTarget.getMaxHealth());
+         this.updateTargetIdentity(currentTarget);
+      }
+
+      boolean shouldBeVisible = currentTarget != null;
+      if (!shouldBeVisible) {
+         this.target = null;
+         this.cachedNameEntity = null;
+         this.cachedCustomName = null;
+      }
+
+      if (shouldBeVisible != this.visible) {
+         this.visible = shouldBeVisible;
+         this.visibilityAnimation.a(shouldBeVisible ? 1.0 : 0.0, 0.2, Easing.h);
+      }
+
+      float healthProgress = clamp01(this.targetHealth / this.targetMaxHealth);
+      if (Math.abs(this.healthAnimation.i() - healthProgress) > 0.01) {
+         this.healthAnimation.a(healthProgress, 0.15, Easing.h);
+      }
+
+      this.visibilityAnimation.a();
+      this.healthAnimation.a();
+   }''',
+     '''   private void updateTarget() {
+      LivingEntity currentTarget = this.validTarget(HudServiceRegistry.TARGETS.currentTarget());
+      if (currentTarget == null && this.isEditing()) {
+         currentTarget = this.a.player;
+      }
+
+      boolean showAbsorption = ModuleRegistry.TARGET_HUD != null
+         && ModuleRegistry.TARGET_HUD.showAbsorption().get();
+      if (currentTarget != null) {
+         float currentHealth = Math.max(0.0F, currentTarget.getHealth());
+         float currentAbsorption = showAbsorption
+            ? Math.max(0.0F, currentTarget.getAbsorptionAmount())
+            : 0.0F;
+         float effectiveMaxHealth = Math.max(1.0F, currentTarget.getMaxHealth()) + currentAbsorption;
+
+         if (currentTarget != this.target) {
+            this.target = currentTarget;
+            this.healthAnimation.d(clamp01(currentHealth / effectiveMaxHealth));
+            this.absorptionAnimation.d(clamp01(currentAbsorption / effectiveMaxHealth));
+         }
+
+         this.targetHealth = currentHealth;
+         this.targetAbsorption = currentAbsorption;
+         this.targetMaxHealth = effectiveMaxHealth;
+         this.updateCachedHealthText(showAbsorption);
+         this.updateTargetIdentity(currentTarget);
+      }
+
+      boolean shouldBeVisible = currentTarget != null;
+      if (!shouldBeVisible) {
+         this.target = null;
+         this.cachedNameEntity = null;
+         this.cachedCustomName = null;
+      }
+
+      if (shouldBeVisible != this.visible) {
+         this.visible = shouldBeVisible;
+         this.visibilityAnimation.a(shouldBeVisible ? 1.0 : 0.0, 0.2, Easing.h);
+      }
+
+      float healthProgress = clamp01(this.targetHealth / this.targetMaxHealth);
+      float absorptionProgress = clamp01(this.targetAbsorption / this.targetMaxHealth);
+      if (Math.abs(this.healthAnimation.i() - healthProgress) > 0.01) {
+         this.healthAnimation.a(healthProgress, 0.15, Easing.h);
+      }
+      if (Math.abs(this.absorptionAnimation.i() - absorptionProgress) > 0.01) {
+         this.absorptionAnimation.a(absorptionProgress, 0.15, Easing.h);
+      }
+
+      this.visibilityAnimation.a();
+      this.healthAnimation.a();
+      this.absorptionAnimation.a();
+   }'''),
+    ('''   private void updateCachedHealthText() {
+      int tenths = Math.round(Math.max(0.0F, this.targetHealth) * 10.0F);
+      if (tenths == this.cachedHealthTenths) return;
+      this.cachedHealthTenths = tenths;
+      this.cachedHealthText = "HP / " + String.format(Locale.ROOT, "%.1f", Math.max(0.0F, this.targetHealth)).replace('.', ',');
+   }''',
+     '''   private void updateCachedHealthText(boolean showAbsorption) {
+      int healthTenths = Math.round(Math.max(0.0F, this.targetHealth) * 10.0F);
+      int absorptionTenths = Math.round(Math.max(0.0F, this.targetAbsorption) * 10.0F);
+      if (healthTenths == this.cachedHealthTenths
+         && absorptionTenths == this.cachedAbsorptionTenths
+         && showAbsorption == this.cachedShowAbsorption) return;
+      this.cachedHealthTenths = healthTenths;
+      this.cachedAbsorptionTenths = absorptionTenths;
+      this.cachedShowAbsorption = showAbsorption;
+      this.cachedHealthText = "HP / "
+         + String.format(Locale.ROOT, "%.1f", healthTenths / 10.0F).replace('.', ',');
+      if (showAbsorption && absorptionTenths > 0) {
+         this.cachedHealthText += " +"
+            + String.format(Locale.ROOT, "%.1f", absorptionTenths / 10.0F).replace('.', ',');
+      }
+   }'''),
+    ('''            float healthProgress = clamp01((float)this.healthAnimation.j());
+            if (healthProgress > 0.0F) {
+               float filledWidth = Math.min(barWidth, Math.max(barHeight, barWidth * healthProgress));
+               float glow = 1.0F * scale;
+               renderer.a(
+                  barX - glow,
+                  barY - glow,
+                  filledWidth + glow * 2.0F,
+                  barHeight + glow * 2.0F,
+                  (barHeight + glow * 2.0F) / 2.0F,
+                  withAlpha(BAR_GLOW, alpha),
+                  matrices
+               );
+               renderer.a(barX, barY, filledWidth, barHeight, barRadius, withAlpha(BAR_COLOR, alpha), matrices);
+            }''',
+     '''            float healthProgress = clamp01((float)this.healthAnimation.j());
+            float healthWidth = 0.0F;
+            if (healthProgress > 0.0F) {
+               healthWidth = Math.min(barWidth, Math.max(barHeight, barWidth * healthProgress));
+               float glow = 1.0F * scale;
+               renderer.a(
+                  barX - glow,
+                  barY - glow,
+                  healthWidth + glow * 2.0F,
+                  barHeight + glow * 2.0F,
+                  (barHeight + glow * 2.0F) / 2.0F,
+                  withAlpha(BAR_GLOW, alpha),
+                  matrices
+               );
+               renderer.a(barX, barY, healthWidth, barHeight, barRadius, withAlpha(BAR_COLOR, alpha), matrices);
+            }
+            float absorptionProgress = clamp01((float)this.absorptionAnimation.j());
+            float absorptionWidth = Math.min(Math.max(0.0F, barWidth - healthWidth), barWidth * absorptionProgress);
+            if (absorptionWidth > 0.0F) {
+               renderer.a(barX + healthWidth, barY, absorptionWidth, barHeight,
+                  Math.min(barRadius, absorptionWidth / 2.0F), withAlpha(ABSORPTION_COLOR, alpha), matrices);
+            }'''),
+))
+
 patch_generated_java('ai/derco/hud/elements/InventoryHudElement.java', (
     ('private static final Color OVERALL_BG_COLOR = new Color(25, 27, 32, 110);',
      'private static final Color OVERALL_BG_COLOR = ai.derco.hud.core.HudTheme.PANEL;'),
