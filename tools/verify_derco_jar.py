@@ -142,6 +142,29 @@ def main() -> None:
     ):
         fail("Potion HUD must support all three sort modes before applying its visible-entry limit")
 
+    target_hud = (generated_java / "hud/elements/TargetHudElement.java").read_text(encoding="utf-8")
+    target_update_start = target_hud.find("private void updateTarget() {")
+    target_update_end = target_hud.find("private void updateCachedHealthText()", target_update_start)
+    target_identity_start = target_hud.find("private void updateTargetIdentity(LivingEntity entity) {")
+    target_identity_end = target_hud.find("private LivingEntity validTarget", target_identity_start)
+    if min(target_update_start, target_update_end, target_identity_start, target_identity_end) < 0:
+        fail("Target HUD identity-cache methods are missing")
+    target_update_body = target_hud[target_update_start:target_update_end]
+    target_identity_body = target_hud[target_identity_start:target_identity_end]
+    if (
+        "import net.minecraft.text.Text;" not in target_hud
+        or "private LivingEntity cachedNameEntity;" not in target_hud
+        or "private Text cachedCustomName;" not in target_hud
+        or target_update_body.count("this.updateTargetIdentity(currentTarget);") != 1
+        or target_update_body.find("this.updateTargetIdentity(currentTarget);") < target_update_body.find("this.targetMaxHealth =")
+        or "this.cachedNameEntity = null;" not in target_update_body
+        or "this.cachedCustomName = null;" not in target_update_body
+        or "if (entity != this.cachedNameEntity || customName != this.cachedCustomName)" not in target_identity_body
+        or target_identity_body.count("entity.getName().getString()") != 1
+        or "      }\n      this.skinTexture =" not in target_identity_body
+    ):
+        fail("Target HUD must cache stable name text while continuing to refresh asynchronously loaded skin textures")
+
     camera_mixin = (generated_java / "mixin/CameraMixin.java").read_text(encoding="utf-8")
     expected_camera_rotation = (
         '@Redirect(method = "update", at = @At(value = "INVOKE", '

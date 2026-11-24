@@ -2045,6 +2045,44 @@ patch_generated_java('ai/derco/hud/elements/TargetHudElement.java', (
 
    private void updateTargetIdentity(LivingEntity entity) {'''),
 
+    ('import net.minecraft.entity.player.PlayerEntity;',
+     'import net.minecraft.entity.player.PlayerEntity;\nimport net.minecraft.text.Text;'),
+    ('''private int cachedHealthTenths = Integer.MIN_VALUE;
+   private String cachedHealthText = "HP / 20,0";''',
+     '''private int cachedHealthTenths = Integer.MIN_VALUE;
+   private String cachedHealthText = "HP / 20,0";
+   private LivingEntity cachedNameEntity;
+   private Text cachedCustomName;'''),
+    ('''         if (currentTarget != this.target) {
+            this.target = currentTarget;
+            this.updateTargetIdentity(currentTarget);
+            float healthProgress = clamp01(currentTarget.getHealth() / Math.max(1.0F, currentTarget.getMaxHealth()));''',
+     '''         if (currentTarget != this.target) {
+            this.target = currentTarget;
+            float healthProgress = clamp01(currentTarget.getHealth() / Math.max(1.0F, currentTarget.getMaxHealth()));'''),
+    ('''      if (!shouldBeVisible) {
+         this.target = null;
+      }''',
+     '''      if (!shouldBeVisible) {
+         this.target = null;
+         this.cachedNameEntity = null;
+         this.cachedCustomName = null;
+      }'''),
+    ('''   private void updateTargetIdentity(LivingEntity entity) {
+      this.targetName = entity.getName().getString();
+      this.skinTexture = entity instanceof PlayerEntity player ? this.skinFor(player) : DefaultSkinHelper.getTexture();
+   }''',
+     '''   private void updateTargetIdentity(LivingEntity entity) {
+      Text customName = entity.getCustomName();
+      if (entity != this.cachedNameEntity || customName != this.cachedCustomName) {
+         this.cachedNameEntity = entity;
+         this.cachedCustomName = customName;
+         this.targetName = entity.getName().getString();
+      }
+      this.skinTexture = entity instanceof PlayerEntity player ? this.skinFor(player) : DefaultSkinHelper.getTexture();
+   }'''),
+
+
 ))
 
 patch_generated_java('ai/derco/hud/elements/InventoryHudElement.java', (
