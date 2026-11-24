@@ -463,3 +463,15 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Extended the JAR verifier to require exactly one `this.x()` call and verify that the snapshot assignment precedes the update/render preview checks.
 - Local dry-run against the generated Java artifact from CI #136 confirmed both generator anchors occur exactly once. After applying the transformation, the class contains one `this.x()` call; Gradle/CI validation and live Minecraft interaction are pending for the resulting commit.
 - This is a source-level reduction in repeated collection/sorting during HUD editing, not a measured FPS claim.
+
+
+## 2026-11-24 — Cache Target HUD name identity
+
+- Confirmed in the CI-generated Java artifact for branch HEAD \`26208409c8062a15d8466dd3e8e4155722871331\` that \`updateTarget()\` called \`updateTargetIdentity()\` twice on the first frame after a target change and once on every subsequent HUD update. The method rebuilt \`entity.getName().getString()\` every time, even while the same target and custom name remained unchanged.
+- Updated the source-of-truth patch in \`tools/prepare_pulse_foundation.py\`: cache the target entity reference and its nullable custom-name \`Text\`; rebuild the target name only when the target entity or custom-name object changes. Clear the cached references when no target is active.
+- Removed the duplicate identity update from the target-change branch. The method now runs once per HUD update. Kept skin texture resolution outside the name-cache guard, so the client can still replace the default skin after asynchronous skin loading.
+- Extended \`tools/verify_derco_jar.py\` to verify the single identity-update call, name-cache condition, cache reset, and continued skin refresh outside the guard.
+- GitHub Actions run [#138](https://github.com/andreyromanov681-boop/DercoVisuals/actions/runs/45338218972) passed on code commit \`cc6b13532dd9928e8b92e380b72416db99ef2985\`: Java 21.0.13, Gradle 9.2.1, source generation, \`compileJava\`, \`build\`, JAR verification, and artifact upload all succeeded.
+- Inspected the generated Java source and runtime JAR bytecode: \`getString()\` is inside the identity-change branch; \`skinFor()\` remains after that branch. Runtime JAR: \`DercoVisuals-1.0.0.jar\`, 16,641,794 bytes, SHA-256 \`c8901f4f0d10dc1718ecacc07c311b6c84e33bf762255e0a2dc3afa18c15dcb4\`; ZIP integrity passed.
+- Gradle reports \`compileTestJava\` and \`test\` as \`NO-SOURCE\`; no Java unit tests exist. Existing non-fatal Loom remapping warnings remain for \`MapMarkerRenderer\`, \`Framebuffer\`, and one modifiers target.
+- No live Minecraft client test or FPS benchmark was performed. This change reduces repeated name-string conversion by source/bytecode evidence; no FPS gain is claimed. \`pulse-src.zip\` and \`main\` were not modified.
