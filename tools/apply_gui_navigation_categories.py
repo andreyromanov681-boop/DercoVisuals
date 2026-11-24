@@ -67,7 +67,13 @@ def patch_friend_store_migration() -> None:
         fail(f"{relative} not found")
     source = path.read_text(encoding="utf-8")
 
-    if "migrateLegacyFriendHistory();" in source:
+    already_migrated = "migrateLegacyFriendHistory();" in source
+    if (
+        already_migrated
+        and "private static synchronized boolean ensureLoaded()" in source
+        and source.count("if (!ensureLoaded()) return List.of();") == 1
+        and source.count("if (!ensureLoaded()) return false;") == 3
+    ):
         return
 
     import_anchor = "package ai.derco.gui.friends;\n\n"
@@ -96,26 +102,33 @@ import net.minecraft.client.MinecraftClient;
         }
     }
 """
-    new_loader = """    private static synchronized void ensureLoaded() {
-        if (loaded) return;
-        loaded = true;
+    new_loader = """    private static synchronized boolean ensureLoaded() {
+        if (loaded) return true;
         Path path = file();
-        if (Files.isRegularFile(path)) {
+        if (Files.exists(path)) {
             try {
                 for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
                     String name = clean(line);
                     if (isValidName(name)) FRIENDS.putIfAbsent(key(name), name);
                 }
+                loaded = true;
+                return true;
             } catch (IOException exception) {
                 LOGGER.warn("Could not read local friends list at {}", path, exception);
+                return false;
             }
-            return;
+        }
+        if (!Files.notExists(path)) {
+            LOGGER.warn("Could not determine whether local friends list exists at {}", path);
+            return false;
         }
 
         migrateLegacyFriendHistory();
         // The presence of friends.txt marks that the one-time legacy migration was attempted,
         // including installations that had no old friend entries.
+        loaded = true;
         save();
+        return true;
     }
 
     private static void migrateLegacyFriendHistory() {
@@ -170,13 +183,74 @@ import net.minecraft.client.MinecraftClient;
             LOGGER.debug("Minecraft run directory is not available during friend migration", exception);
         }
         return List.copyOf(directories);
-    }
-"""
-    if source.count(old_loader) != 1:
-        fail("expected FriendStore one-time loader block not found")
-    source = source.replace(old_loader, new_loader, 1)
+    }"""
+    new_ensure = new_loader.split("\n\n    private static void migrateLegacyFriendHistory()", 1)[0]
+    if already_migrated:
+        if "private static synchronized void ensureLoaded()" in source:
+            ensure_start = source.find("    private static synchronized void ensureLoaded() {")
+            ensure_end = source.find("\n    private static void migrateLegacyFriendHistory()", ensure_start)
+            if ensure_start < 0 or ensure_end < 0:
+                fail("expected existing FriendStore migration loader boundary not found")
+            source = source[:ensure_start] + new_ensure + source[ensure_end:]
+        elif "private static synchronized boolean ensureLoaded()" not in source:
+            fail("existing FriendStore migration loader has an unknown signature")
+    else:
+        if source.count(old_loader) != 1:
+            fail("expected FriendStore one-time loader block not found")
+        source = source.replace(old_loader, new_loader, 1)
+
+    method_guards = (
+        ("""    public static synchronized List<String> getNames() {
+        ensureLoaded();
+        return List.copyOf(FRIENDS.values());
+    }""",
+         """    public static synchronized List<String> getNames() {
+        if (!ensureLoaded()) return List.of();
+        return List.copyOf(FRIENDS.values());
+    }"""),
+        ("""    public static synchronized boolean isFriendName(String name) {
+        ensureLoaded();
+        String normalized = key(name);
+        return !normalized.isEmpty() && FRIENDS.containsKey(normalized);
+    }""",
+         """    public static synchronized boolean isFriendName(String name) {
+        if (!ensureLoaded()) return false;
+        String normalized = key(name);
+        return !normalized.isEmpty() && FRIENDS.containsKey(normalized);
+    }"""),
+        ("""    public static synchronized boolean add(String name) {
+        ensureLoaded();
+        String value = clean(name);""",
+         """    public static synchronized boolean add(String name) {
+        if (!ensureLoaded()) return false;
+        String value = clean(name);"""),
+        ("""    public static synchronized boolean remove(String name) {
+        ensureLoaded();
+        String normalized = key(name);
+        String previous = FRIENDS.remove(normalized);
+        if (previous == null) return false;
+        if (save()) return true;
+        FRIENDS.put(normalized, previous);
+        return false;
+    }""",
+         """    public static synchronized boolean remove(String name) {
+        if (!ensureLoaded()) return false;
+        String normalized = key(name);
+        String previous = FRIENDS.remove(normalized);
+        if (previous == null) return false;
+        if (save()) return true;
+        FRIENDS.put(normalized, previous);
+        return false;
+    }"""),
+    )
+    for old_method, new_method in method_guards:
+        if new_method in source:
+            continue
+        if source.count(old_method) != 1:
+            fail("expected exactly one FriendStore load guard target")
+        source = source.replace(old_method, new_method, 1)
     path.write_text(source, encoding="utf-8", newline="\n")
-    print("[derco-ui-update] added one-time ConfigState.FriendHistoryState migration")
+    print("[derco-ui-update] added one-time ConfigState.FriendHistoryState migration with read-failure guards")
 
 
 def patch_clickgui_navigation() -> None:

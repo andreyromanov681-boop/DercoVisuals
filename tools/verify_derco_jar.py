@@ -263,6 +263,35 @@ def main() -> None:
     if "migrateLegacyFriendHistory()" not in friends_store or "ConfigJsonCodec.a(json)" not in friends_store:
         fail("FriendStore legacy ConfigState.FriendHistoryState migration is missing")
 
+    load_start = friends_store.find("private static synchronized boolean ensureLoaded() {")
+    load_end = friends_store.find("private static synchronized boolean save()", load_start)
+    if load_start < 0 or load_end < 0:
+        fail("FriendStore must expose a guarded boolean load operation")
+    load_body = friends_store[load_start:load_end]
+    read_position = load_body.find("Files.readAllLines(path, StandardCharsets.UTF_8)")
+    read_success = load_body.find("loaded = true;", read_position)
+    read_failure = load_body.find("return false;", load_body.find("catch (IOException exception)", read_position))
+    if (
+        "if (Files.exists(path))" not in load_body
+        or "if (!Files.notExists(path))" not in load_body
+        or read_position < 0
+        or read_success < read_position
+        or read_failure < 0
+    ):
+        fail("FriendStore must distinguish a missing file from an unreadable existing file and leave it retryable")
+
+    guarded_friend_methods = (
+        ("public static synchronized List<String> getNames()", "if (!ensureLoaded()) return List.of();"),
+        ("public static synchronized boolean isFriendName(String name)", "if (!ensureLoaded()) return false;"),
+        ("public static synchronized boolean add(String name)", "if (!ensureLoaded()) return false;"),
+        ("public static synchronized boolean remove(String name)", "if (!ensureLoaded()) return false;"),
+    )
+    for signature, guard in guarded_friend_methods:
+        method_start = friends_store.find(signature)
+        method_end = friends_store.find("\n    }", method_start)
+        if method_start < 0 or method_end < 0 or guard not in friends_store[method_start:method_end]:
+            fail(f"FriendStore {signature} must refuse to use or mutate an unreadable store")
+
     friends_panel = (generated_java / "gui/friends/FriendsPanel.java").read_text(encoding="utf-8")
     remove_signature = "public void b(HistoryEntry historyEntry) {"
     if friends_panel.count(remove_signature) != 1:

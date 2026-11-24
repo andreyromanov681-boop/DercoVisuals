@@ -475,3 +475,11 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Inspected the generated Java source and runtime JAR bytecode: \`getString()\` is inside the identity-change branch; \`skinFor()\` remains after that branch. Runtime JAR: \`DercoVisuals-1.0.0.jar\`, 16,641,794 bytes, SHA-256 \`c8901f4f0d10dc1718ecacc07c311b6c84e33bf762255e0a2dc3afa18c15dcb4\`; ZIP integrity passed.
 - Gradle reports \`compileTestJava\` and \`test\` as \`NO-SOURCE\`; no Java unit tests exist. Existing non-fatal Loom remapping warnings remain for \`MapMarkerRenderer\`, \`Framebuffer\`, and one modifiers target.
 - No live Minecraft client test or FPS benchmark was performed. This change reduces repeated name-string conversion by source/bytecode evidence; no FPS gain is claimed. \`pulse-src.zip\` and \`main\` were not modified.
+
+
+## 2026-11-24 — Protect the local friends file from read-failure overwrite
+
+- Confirmed a persistent-data bug in the final generated FriendStore: ensureLoaded() set loaded = true before reading friends.txt. If Files.readAllLines() threw an IOException, the method logged the error and returned with an empty in-memory map. A subsequent add could then save that empty map plus the new friend over the existing file, silently deleting the other saved friends.
+- Fixed the source-of-truth transformation in tools/apply_gui_navigation_categories.py: loading now distinguishes an existing file, a definitely missing file, and an indeterminate/unreadable path. The loaded flag is set only after a successful read; read failures remain retryable. Friend lookup, list, add, and remove operations now refuse to use or mutate the store until loading succeeds. The layer also upgrades its prior migration form safely and remains idempotent.
+- Extended tools/verify_derco_jar.py to check the guarded loader and all four public operations, so a regression fails the CI JAR verification.
+- The patch is limited to the generation layer and verifier; pulse-src.zip, main, and user config files are untouched. Java 21 Gradle build and JAR verification will be reported from the CI run triggered by this commit. Live filesystem-failure behavior in Minecraft remains untested.
