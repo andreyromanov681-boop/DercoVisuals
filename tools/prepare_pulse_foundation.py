@@ -1455,10 +1455,11 @@ public final class CrashLogBootstrap implements PreLaunchEntrypoint {
 
 # Mark sessions clean only when the client reaches its normal stopping callback.
 patch_generated_java('ai/derco/DercoVisuals.java', (
-    ('import ai.derco.auth.UserInfo;', 'import ai.derco.auth.UserInfo;\nimport ai.derco.crash.CrashLogBootstrap;'),
+    ('import ai.derco.auth.UserInfo;', 'import ai.derco.auth.UserInfo;\nimport ai.derco.crash.CrashLogBootstrap;\nimport ai.derco.media.MediaSessionService;'),
     ('ClientLifecycleEvents.CLIENT_STOPPING.register(client -> LocalConfigManager.get().flushSaveNow("client-stop"));',
      'ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {\n'
      '            LocalConfigManager.get().flushSaveNow("client-stop");\n'
+     '            MediaSessionService.h();\n'
      '            CrashLogBootstrap.markCleanShutdown();\n'
      '        });'),
 ))
