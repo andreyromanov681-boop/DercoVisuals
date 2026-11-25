@@ -390,28 +390,46 @@ def main() -> None:
         if client_mixins.count("PlayerListHudMixin") != 1:
             fail("PlayerListHudMixin must be registered exactly once in the client Mixin list")
 
-        if "refmap" in mixin_config:
-            fail("runtime Mixin config must not reference a legacy refmap with Loom TinyRemapper")
-        if "Minecraft-refmap.json" in names:
-            fail("runtime JAR still packages the stale upstream Pulse refmap")
-
-        camera_mixin = jar.read("ai/derco/mixin/CameraMixin.class")
-        for selector in (
-            b"Lnet/minecraft/class_4184;method_19325(FF)V",
-            b"Lnet/minecraft/class_4184;method_19318(F)F",
-        ):
-            if selector not in camera_mixin:
-                fail("CameraMixin selectors were not remapped in-place to intermediary")
-        if b"Lnet/minecraft/client/render/Camera;setRotation(FF)V" in camera_mixin:
-            fail("CameraMixin still contains a named production selector")
-
-        chat_hud_mixin = jar.read("ai/derco/mixin/ChatHudMixin.class")
-        if b"Lnet/minecraft/class_332;method_35720" not in chat_hud_mixin:
-            fail("ChatHudMixin DrawContext selector was not remapped in-place")
-
-        entity_renderer_mixin = jar.read("ai/derco/mixin/EntityRendererMixin.class")
-        if b"method_3926" not in entity_renderer_mixin or b"renderLabelIfPresent" in entity_renderer_mixin:
-            fail("EntityRendererMixin label method was not remapped in-place for Yarn 1.21.11")
+        refmap_name = mixin_config.get("refmap")
+        if not isinstance(refmap_name, str) or refmap_name not in names:
+            fail(f"runtime Mixin refmap is missing: {refmap_name!r}")
+        try:
+            refmap = json.loads(jar.read(refmap_name))
+        except Exception as exc:
+            fail(f"runtime Mixin refmap is invalid JSON: {exc}")
+        mappings = refmap.get("mappings")
+        if not isinstance(mappings, dict) or not mappings:
+            fail("runtime Mixin refmap has no class mappings")
+        stale_keys = sorted(key for key in mappings if key.startswith("ru/pulse/mixin/"))
+        if stale_keys:
+            fail("runtime Mixin refmap still contains upstream ru/pulse keys")
+        mixin_package_path = mixin_config["package"].replace(".", "/")
+        required_refmap_mixins = {
+            "CameraMixin",
+            "ChatHudMixin",
+            "EntityRendererMixin",
+            "PlayerListHudMixin",
+        }
+        missing_refmap_mixins = sorted(
+            name for name in required_refmap_mixins
+            if f"{mixin_package_path}/{name}" not in mappings
+        )
+        if missing_refmap_mixins:
+            fail(
+                "runtime Mixin refmap is missing active ai.derco mappings: "
+                + ", ".join(missing_refmap_mixins)
+            )
+        entity_renderer_mappings = mappings[f"{mixin_package_path}/EntityRendererMixin"]
+        expected_entity_label_mapping = (
+            "Lnet/minecraft/class_897;method_3926("
+            "Lnet/minecraft/class_10017;Lnet/minecraft/class_4587;"
+            "Lnet/minecraft/class_11659;Lnet/minecraft/class_12075;)V"
+        )
+        if expected_entity_label_mapping not in entity_renderer_mappings.values():
+            fail(
+                "EntityRendererMixin refmap does not target the Yarn 1.21.11 "
+                "render-command label signature"
+            )
 
         missing = sorted(PREFIX + ref for ref in refs if PREFIX + ref not in names)
         if missing:

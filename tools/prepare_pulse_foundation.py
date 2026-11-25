@@ -3154,7 +3154,7 @@ stale_refmap_path = SRC / 'resources' / stale_refmap_name
 if stale_refmap_path.is_file():
     stale_refmap_path.unlink()
 mixin_config_path.write_text(
-    json.dumps(generated_mixin_config, indent=2) + '\\n',
+    json.dumps(generated_mixin_config, indent=2) + '\n',
     encoding='utf-8',
 )
 
