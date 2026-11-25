@@ -569,6 +569,15 @@ patch_generated_java('ai/derco/hud/elements/PotionsHudElement.java', (
          }
       }
       return arrayList;'''),
+    ('''      if (i <= 0) {
+         return "--:--";
+      }''',
+     '''      if (i == StatusEffectInstance.INFINITE) {
+         return "∞";
+      }
+      if (i <= 0) {
+         return "--:--";
+      }'''),
 ))
 patch_generated_java('ai/derco/modules/hud/CooldownsHud.java', (
     ('   private final SliderSetting scale = new SliderSetting("Масштаб", 1.0F, 0.5F, 2.0F, 0.1F);\n\n   public CooldownsHud() {',

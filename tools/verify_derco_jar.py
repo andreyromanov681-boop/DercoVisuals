@@ -142,6 +142,21 @@ def main() -> None:
     ):
         fail("Potion HUD must support all three sort modes before applying its visible-entry limit")
 
+    duration_start = potions_element.find("private String formatEffectDuration(int i) {")
+    duration_end = potions_element.find("private String effectIconKey", duration_start)
+    duration_body = potions_element[duration_start:duration_end]
+    infinite_branch = duration_body.find("if (i == StatusEffectInstance.INFINITE)")
+    expired_branch = duration_body.find("if (i <= 0)")
+    if (
+        duration_start < 0
+        or duration_end < duration_start
+        or infinite_branch < 0
+        or expired_branch < 0
+        or infinite_branch > expired_branch
+        or 'return "∞";' not in duration_body
+    ):
+        fail("Potion HUD must render StatusEffectInstance.INFINITE as an unlimited duration")
+
     target_module = (generated_java / "modules/hud/TargetHud.java").read_text(encoding="utf-8")
     if (
         "import ai.derco.settings.BooleanSetting;" not in target_module

@@ -506,3 +506,12 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Fabric Loom 1.14 uses TinyRemapper for in-place Mixin selector remapping by default; a refmap is unnecessary unless legacy Mixin AP is enabled. Corrected the source generator to remove both the legacy `refmap` property and file, and explicitly set `loom.mixin.useLegacyMixinAp = false`. No dependency was added.
 - CI #146 stopped before Gradle because the generator appended a literal `\\n` after the JSON document; the downstream layer correctly rejected the malformed Mixin config. Corrected the generator to write a real newline. This was a tooling regression in the attempted fix, not a Minecraft runtime result.
 - The JAR verifier checks that the stale refmap is absent and that Camera, ChatHud, and EntityRenderer selectors are remapped to intermediary names in production class files. The next CI run must validate the Loom remap; no live Minecraft client was launched. `main` and `pulse-src.zip` remain untouched.
+
+
+## 2026-11-25 — Show unlimited Potion HUD durations correctly
+
+- Confirmed against Yarn 1.21.11+build.3 that `StatusEffectInstance.INFINITE` is the named public sentinel with value `-1`. The Potion HUD formatter previously treated every non-positive duration as `--:--`, so an unlimited effect was indistinguishable from an expired/zero-duration entry.
+- Updated the source-of-truth patch in `tools/prepare_pulse_foundation.py` to render the named infinite sentinel as `∞` before the existing non-positive fallback. Zero duration continues to render as `--:--`; normal finite durations keep their current format.
+- Extended `tools/verify_derco_jar.py` to require the infinite-duration branch before the expired-duration fallback in the generated Java source.
+- Dry-run against the generated Java artifact from the pre-change HEAD found the formatter anchor exactly once and confirmed representative output: `-1 → ∞`, `0 → --:--`, `20 → 1`, `1200 → 1:00`, `72000 → 60:00`. Full CI/build validation is pending the commit-triggered workflow; no live Minecraft test has been performed.
+- API reference: https://maven.fabricmc.net/docs/yarn-1.21.11+build.3/net/minecraft/entity/effect/StatusEffectInstance.html
