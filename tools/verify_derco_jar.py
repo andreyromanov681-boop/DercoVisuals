@@ -183,6 +183,31 @@ def main() -> None:
     ):
         fail("Target HUD must display configurable absorption as a separately animated health-bar segment")
 
+    bootstrap_source = (generated_java / "DercoVisuals.java").read_text(encoding="utf-8")
+    stopping_start = bootstrap_source.find("ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {")
+    stopping_end = bootstrap_source.find("\n        });", stopping_start)
+    if (
+        stopping_start < 0
+        or stopping_end < stopping_start
+        or "MediaSessionService.h();" not in bootstrap_source[stopping_start:stopping_end]
+        or "CrashLogBootstrap.markCleanShutdown();" not in bootstrap_source[stopping_start:stopping_end]
+    ):
+        fail("client shutdown must stop the media polling service before marking a clean exit")
+
+    media_service = (generated_java / "media/MediaSessionService.java").read_text(encoding="utf-8")
+    media_shutdown_start = media_service.find("public static synchronized void h() {")
+    media_shutdown_end = media_service.find("\n   }", media_shutdown_start)
+    if (
+        media_shutdown_start < 0
+        or media_shutdown_end < media_shutdown_start
+        or "g.getAndSet(true)" not in media_service[media_shutdown_start:media_shutdown_end]
+        or "f.set(false);" not in media_service[media_shutdown_start:media_shutdown_end]
+        or "h.interrupt();" not in media_service[media_shutdown_start:media_shutdown_end]
+        or "h.join(1000L);" not in media_service[media_shutdown_start:media_shutdown_end]
+        or "MediaProvider.shutdown();" not in media_service[media_shutdown_start:media_shutdown_end]
+    ):
+        fail("media service shutdown must stop and join its polling thread and release the provider")
+
     camera_mixin = (generated_java / "mixin/CameraMixin.java").read_text(encoding="utf-8")
     expected_camera_rotation = (
         '@Redirect(method = "update", at = @At(value = "INVOKE", '
