@@ -3144,14 +3144,18 @@ for mixin_name in (*generated_mixin_config.get('mixins', []), *generated_mixin_c
     if not mixin_source.is_file():
         raise SystemExit(f'Mixin config entry has no Java source: {mixin_name}')
 
-# The upstream Pulse refmap is keyed by ru/pulse and contains pre-1.21.11
-# descriptors. Do not package it after rebranding; Loom's Mixin AP must emit a
-# fresh refmap for ai.derco using the active Yarn 1.21.11 mappings.
-refmap_name = generated_mixin_config.get('refmap')
-if not isinstance(refmap_name, str) or not refmap_name:
-    raise SystemExit('Mixin config must declare a refmap filename')
-stale_refmap_path = SRC / 'resources' / refmap_name
+# Loom 1.14 remaps Mixin selectors in-place with TinyRemapper by default.
+# The upstream Pulse refmap is keyed by ru/pulse and contains stale 1.21.1
+# descriptors, so neither its file nor its config reference may ship.
+stale_refmap_name = generated_mixin_config.pop('refmap', 'Minecraft-refmap.json')
+if not isinstance(stale_refmap_name, str) or not stale_refmap_name:
+    raise SystemExit('Mixin refmap filename must be a non-empty string')
+stale_refmap_path = SRC / 'resources' / stale_refmap_name
 if stale_refmap_path.is_file():
     stale_refmap_path.unlink()
+mixin_config_path.write_text(
+    json.dumps(generated_mixin_config, indent=2) + '\\n',
+    encoding='utf-8',
+)
 
 print(f'Prepared DercoVisuals: {len(list((SRC / "java").rglob("*.java")))} Java files, {len(asset_paths)} owned PNG assets')
