@@ -3144,8 +3144,14 @@ for mixin_name in (*generated_mixin_config.get('mixins', []), *generated_mixin_c
     if not mixin_source.is_file():
         raise SystemExit(f'Mixin config entry has no Java source: {mixin_name}')
 
+# The upstream Pulse refmap is keyed by ru/pulse and contains pre-1.21.11
+# descriptors. Do not package it after rebranding; Loom's Mixin AP must emit a
+# fresh refmap for ai.derco using the active Yarn 1.21.11 mappings.
 refmap_name = generated_mixin_config.get('refmap')
-if refmap_name and not (SRC / 'resources' / refmap_name).is_file():
-    raise SystemExit(f'Mixin refmap is missing: {refmap_name}')
+if not isinstance(refmap_name, str) or not refmap_name:
+    raise SystemExit('Mixin config must declare a refmap filename')
+stale_refmap_path = SRC / 'resources' / refmap_name
+if stale_refmap_path.is_file():
+    stale_refmap_path.unlink()
 
 print(f'Prepared DercoVisuals: {len(list((SRC / "java").rglob("*.java")))} Java files, {len(asset_paths)} owned PNG assets')

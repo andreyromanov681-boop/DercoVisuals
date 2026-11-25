@@ -496,3 +496,12 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Validation before commit: exact-anchor transformation was simulated against the generated Java artifact from CI run #141; all expected module/renderer members and feature guards were present. The full Java 21 Gradle build and JAR verifier are delegated to the workflow triggered by this commit; its result must be checked before calling the change verified.
 - Not verified in a live Minecraft client. The visual segment, ClickGUI toggle, and persistence across restart still need an in-game smoke test.
 - Next: manually test Target HUD with a target that has absorption, toggle the setting off/on, and confirm config persistence.
+
+
+## 2026-11-25 — Regenerate the rebranded Mixin refmap
+
+- Confirmed in the CI #144 runtime JAR that `dercovisuals.mixins.json` declares package `ai.derco.mixin` and refmap `Minecraft-refmap.json`, but the packaged refmap contained 56 keys under `ru/pulse/mixin/*` and zero under `ai/derco/mixin/*`.
+- The stale `EntityRendererMixin` entry still mapped `renderLabelIfPresent` to the old `(EntityRenderState, Text, MatrixStack, VertexConsumerProvider, int)V` signature. Yarn 1.21.11 uses `(EntityRenderState, MatrixStack, OrderedRenderCommandQueue, CameraRenderState)V`; the current name-label pipeline is command-queue based.
+- Root cause: source generation copied the upstream Pulse refmap unchanged. The resource rewrite handled dotted package names but not slash-separated refmap class keys, and the generator explicitly required the stale refmap to remain in resources.
+- Fix: remove the upstream refmap from generated resources so the Mixin annotation processor emits a fresh mapping for the rebranded package and current Yarn version. The JAR verifier now checks active package keys and the exact 1.21.11 EntityRenderer selector.
+- CI validation is pending. No live Minecraft client was launched; runtime Mixin application still needs an in-game smoke test. `main` and `pulse-src.zip` remain untouched.
