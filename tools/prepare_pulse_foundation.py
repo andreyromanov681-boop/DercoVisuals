@@ -631,6 +631,43 @@ patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
       boolean zV = this.v();'''),
 ))
 
+
+# Cooldown snapshots only change when the local player's tick advances. The HUD
+# update method is called from render, so cache the inventory scan/sort by player
+# identity and age while leaving animation/layout updates per frame.
+patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
+    ('''   private List<CooldownsHudElement.CooldownSnapshot> Y = List.of();''',
+     '''   private List<CooldownsHudElement.CooldownSnapshot> Y = List.of();
+   private Object cachedSnapshotPlayer;
+   private int cachedSnapshotTick = Integer.MIN_VALUE;'''),
+    ('''      this.w();
+      List<CooldownsHudElement.CooldownSnapshot> listX = this.x();
+      this.Y = listX;
+      boolean zV = this.v();''',
+     '''      this.w();
+      List<CooldownsHudElement.CooldownSnapshot> listX = this.currentSnapshots();
+      boolean zV = this.v();'''),
+    ('''   private List<CooldownsHudElement.CooldownSnapshot> x() {''',
+     '''   private List<CooldownsHudElement.CooldownSnapshot> currentSnapshots() {
+      if (this.a.player == null) {
+         this.Y = List.of();
+         this.cachedSnapshotPlayer = null;
+         this.cachedSnapshotTick = Integer.MIN_VALUE;
+         return this.Y;
+      }
+
+      if (this.cachedSnapshotPlayer != this.a.player || this.cachedSnapshotTick != this.a.player.age) {
+         this.Y = this.x();
+         this.cachedSnapshotPlayer = this.a.player;
+         this.cachedSnapshotTick = this.a.player.age;
+      }
+
+      return this.Y;
+   }
+
+   private List<CooldownsHudElement.CooldownSnapshot> x() {''')
+))
+
 patch_generated_java('ai/derco/gui/settings/ModeSettingWidget.java', (
     ('ArrayList arrayList = new ArrayList<>(this.v);',
      'ArrayList<Integer> arrayList = new ArrayList<>(this.v);'),

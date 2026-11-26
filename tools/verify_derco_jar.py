@@ -298,8 +298,20 @@ def main() -> None:
     ):
         fail("Cooldowns HUD must sort by remaining time before applying the configured visible-entry limit")
 
-    cooldown_snapshot_assignment = cooldowns_element.find("this.Y = listX;")
-    cooldown_update_preview = cooldowns_element.find("boolean zV = this.v();", cooldown_snapshot_assignment)
+    cooldown_snapshot_method_start = cooldowns_element.find(
+        "private List<CooldownsHudElement.CooldownSnapshot> currentSnapshots() {"
+    )
+    cooldown_snapshot_method_end = cooldowns_element.find(
+        "private List<CooldownsHudElement.CooldownSnapshot> x() {",
+        cooldown_snapshot_method_start,
+    )
+    cooldown_snapshot_method = cooldowns_element[cooldown_snapshot_method_start:cooldown_snapshot_method_end]
+    cooldown_update_start = cooldowns_element.find("protected void a() {")
+    cooldown_update_snapshot = cooldowns_element.find(
+        "List<CooldownsHudElement.CooldownSnapshot> listX = this.currentSnapshots();",
+        cooldown_update_start,
+    )
+    cooldown_update_preview = cooldowns_element.find("boolean zV = this.v();", cooldown_update_snapshot)
     cooldown_render_start = cooldowns_element.find(
         "public void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f, float f2)"
     )
@@ -307,15 +319,24 @@ def main() -> None:
     cooldown_render_preview = cooldowns_element.find("boolean zV = this.v();", cooldown_render_update)
     if (
         cooldowns_element.count("this.x()") != 1
+        or cooldowns_element.count("this.currentSnapshots()") != 1
         or "&& this.Y.isEmpty()" not in cooldowns_element
         or "&& this.x().isEmpty()" in cooldowns_element
-        or cooldown_snapshot_assignment < 0
-        or cooldown_update_preview < cooldown_snapshot_assignment
+        or cooldown_snapshot_method_start < 0
+        or cooldown_snapshot_method_end < cooldown_snapshot_method_start
+        or "this.cachedSnapshotPlayer != this.a.player" not in cooldown_snapshot_method
+        or "this.cachedSnapshotTick != this.a.player.age" not in cooldown_snapshot_method
+        or "this.Y = this.x();" not in cooldown_snapshot_method
+        or "this.Y = List.of();" not in cooldown_snapshot_method
+        or "this.cachedSnapshotTick = this.a.player.age;" not in cooldown_snapshot_method
+        or cooldown_update_start < 0
+        or cooldown_update_snapshot < cooldown_update_start
+        or cooldown_update_preview < cooldown_update_snapshot
         or cooldown_render_start < 0
         or cooldown_render_update < cooldown_render_start
         or cooldown_render_preview < cooldown_render_update
     ):
-        fail("Cooldowns HUD must reuse its single collected cooldown snapshot for preview state and rendering")
+        fail("Cooldowns HUD must cache one collected snapshot per player tick while keeping render-time animation updates")
 
     friends_store = (generated_java / "gui/friends/FriendStore.java").read_text(encoding="utf-8")
     if "migrateLegacyFriendHistory()" not in friends_store or "ConfigJsonCodec.a(json)" not in friends_store:
