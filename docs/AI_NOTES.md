@@ -536,3 +536,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Extended `tools/verify_derco_jar.py` to require the reusable field, clear-before-use, direct values iteration, deferred removal, and absence of per-render set/copy allocations in the update method.
 - Dry-run against the generated Java artifact from run #150 found all three transformation anchors exactly once. The transformed update contains no `new HashSet()` or `new ArrayList<>(this.O.values())`; the reconciliation loop contains no structural map mutation and ends before the deferred `removeIf`. The once-per-tick snapshot builder retains its own local `HashSet<Identifier>`.
 - This is a source/bytecode-grounded render hot-path allocation reduction, not a measured FPS claim. No live Minecraft client test or allocation benchmark was performed. Full Java 21 Gradle build and JAR verification are delegated to the commit-triggered CI run.
+
+
+## 2026-11-26 — Show the exact totem count in Totems HUD
+
+- Inspected the generated `TotemsHudElement` from the successful build artifact for the current branch HEAD. The element rendered at most ten totem icons but did not show the actual total, and its inventory scan separately added the offhand after scanning the inventory slot range.
+- Updated the source-of-truth patch in `tools/prepare_pulse_foundation.py`: the scan now stops before the named Yarn `PlayerInventory.OFF_HAND_SLOT`, then reads the offhand stack exactly once. This prevents the offhand from being counted twice when it is part of the inventory slot range.
+- Widened the HUD panel and added a compact `xN` total next to the existing icon row. The icon cap remains ten; the number always represents the complete count including offhand.
+- Extended `tools/verify_derco_jar.py` to require the named slot boundary, one offhand read, the expanded panel bounds, and the count label after the icon loop.
+- Local dry-run against the generated Java artifact for HEAD `d48792cc2bfad91b5549e5c59bc8163dc9a81573` found all five transformation anchors exactly once. The resulting source passed structural checks, and a small slot-boundary simulation confirmed totals of 0, 1 offhand totem, and 1 inventory + 1 offhand totem are counted as 0, 1, and 2.
+- Commit-triggered Java 21 Gradle build and JAR verification are pending. No live Minecraft client test or visual positioning check was performed.
+- Next: verify the count badge in-game with inventory and offhand totems, including dragging the HUD near screen edges.

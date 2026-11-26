@@ -198,6 +198,31 @@ def main() -> None:
     ):
         fail("Target HUD must display configurable absorption as a separately animated health-bar segment")
 
+    totems_hud = (generated_java / "hud/elements/TotemsHudElement.java").read_text(encoding="utf-8")
+    totem_inventory_scan = totems_hud.find(
+        "int inventorySize = Math.min(this.a.player.getInventory().size(), net.minecraft.entity.player.PlayerInventory.OFF_HAND_SLOT);"
+    )
+    totem_offhand_read = totems_hud.find("ItemStack offHandStack = this.a.player.getOffHandStack();")
+    totem_icon_loop = totems_hud.find("for (int i = 0; i < Math.min(totems, 10); i++) {")
+    totem_count_draw = totems_hud.find(
+        'currentDrawContext.drawText(this.a.textRenderer, "x" + totems, 83, 0, ai.derco.hud.core.HudTheme.TEXT.getRGB(), true);'
+    )
+    if (
+        totem_inventory_scan < 0
+        or "for (int i = 0; i < inventorySize; i++) {" not in totems_hud
+        or totems_hud.count("net.minecraft.entity.player.PlayerInventory.OFF_HAND_SLOT") != 1
+        or totem_offhand_read < totem_inventory_scan
+        or totems_hud.count("this.a.player.getOffHandStack()") != 1
+        or "offHandStack.getCount()" not in totems_hud
+        or "this.d = 110.0F;" not in totems_hud
+        or "this.d = 110.0F * fScale;" not in totems_hud
+        or totem_icon_loop < 0
+        or totem_count_draw <= totem_icon_loop
+        or totem_count_draw <= totem_offhand_read
+        or totems_hud.count('currentDrawContext.drawText(this.a.textRenderer, "x" + totems, 83, 0, ai.derco.hud.core.HudTheme.TEXT.getRGB(), true);') != 1
+    ):
+        fail("Totems HUD must count the offhand once and render the exact total beside the capped icon row")
+
     bootstrap_source = (generated_java / "DercoVisuals.java").read_text(encoding="utf-8")
     stopping_start = bootstrap_source.find("ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {")
     stopping_end = bootstrap_source.find("\n        });", stopping_start)

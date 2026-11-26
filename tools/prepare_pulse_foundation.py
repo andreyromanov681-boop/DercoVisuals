@@ -2842,6 +2842,18 @@ patch_generated_java('ai/derco/gui/core/TabSelector.java', (
 ))
 
 
+# Keep the Totems HUD count accurate and expose the full inventory total beside the icon row.
+patch_generated_java('ai/derco/hud/elements/TotemsHudElement.java', (
+    ('this.d = 81.0F;', 'this.d = 110.0F;'),
+    ('this.d = 81.0F * fScale;', 'this.d = 110.0F * fScale;'),
+    ('for (int i = 0; i < this.a.player.getInventory().size(); i++) {',
+     'int inventorySize = Math.min(this.a.player.getInventory().size(), net.minecraft.entity.player.PlayerInventory.OFF_HAND_SLOT);\n\n               for (int i = 0; i < inventorySize; i++) {'),
+    ('if (this.a.player.getOffHandStack().getItem() == Items.TOTEM_OF_UNDYING) {\n                  totems += this.a.player.getOffHandStack().getCount();\n               }',
+     'ItemStack offHandStack = this.a.player.getOffHandStack();\n               if (offHandStack.getItem() == Items.TOTEM_OF_UNDYING) {\n                  totems += offHandStack.getCount();\n               }'),
+    ('               matrices.popMatrix();\n               matrices.popMatrix();',
+     '               matrices.popMatrix();\n               currentDrawContext.drawText(this.a.textRenderer, "x" + totems, 83, 0, ai.derco.hud.core.HudTheme.TEXT.getRGB(), true);\n               matrices.popMatrix();'),
+))
+
 # Register the owned icon family and wire representative art into the live GUI.
 # Existing Pulse-derived GUI logic is preserved; only icons and tiny text offsets change.
 def replace_generated_once(path, old, new, label):
