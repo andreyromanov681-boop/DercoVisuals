@@ -668,6 +668,22 @@ patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
    private List<CooldownsHudElement.CooldownSnapshot> x() {''')
 ))
 
+# Reuse the render reconciliation scratch set and iterate the live values view.
+# The loop only marks entries for fade-out; structural removals happen in the following
+# removeIf call, so copying the map values into a new ArrayList is unnecessary.
+patch_generated_java('ai/derco/hud/elements/CooldownsHudElement.java', (
+    ('''   private int cachedSnapshotTick = Integer.MIN_VALUE;''',
+     '''   private int cachedSnapshotTick = Integer.MIN_VALUE;
+   private final HashSet<Item> activeCooldownItems = new HashSet<>();'''),
+    ('''         HashSet hashSet = new HashSet();
+         int idx = 0;''',
+     '''         HashSet<Item> hashSet = this.activeCooldownItems;
+         hashSet.clear();
+         int idx = 0;'''),
+    ('''         for (CooldownsHudElement.ActiveCooldownEntry activeCooldownEntry3 : new ArrayList<>(this.O.values())) {''',
+     '''         for (CooldownsHudElement.ActiveCooldownEntry activeCooldownEntry3 : this.O.values()) {'''),
+))
+
 patch_generated_java('ai/derco/gui/settings/ModeSettingWidget.java', (
     ('ArrayList arrayList = new ArrayList<>(this.v);',
      'ArrayList<Integer> arrayList = new ArrayList<>(this.v);'),

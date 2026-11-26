@@ -338,6 +338,32 @@ def main() -> None:
     ):
         fail("Cooldowns HUD must cache one collected snapshot per player tick while keeping render-time animation updates")
 
+    cooldown_update_body = cooldowns_element[cooldown_update_start:cooldown_render_start]
+    scratch_set_field = "private final HashSet<Item> activeCooldownItems = new HashSet<>();"
+    scratch_set_binding = "HashSet<Item> hashSet = this.activeCooldownItems;"
+    scratch_set_binding_pos = cooldown_update_body.find(scratch_set_binding)
+    scratch_set_clear_pos = cooldown_update_body.find("hashSet.clear();", scratch_set_binding_pos)
+    reconciliation_loop = (
+        "for (CooldownsHudElement.ActiveCooldownEntry activeCooldownEntry3 : this.O.values()) {"
+    )
+    reconciliation_loop_pos = cooldown_update_body.find(reconciliation_loop)
+    reconciliation_remove_pos = cooldown_update_body.find("this.O.entrySet().removeIf", reconciliation_loop_pos)
+    reconciliation_loop_body = cooldown_update_body[reconciliation_loop_pos:reconciliation_remove_pos]
+    if (
+        cooldowns_element.count(scratch_set_field) != 1
+        or scratch_set_binding_pos < 0
+        or scratch_set_clear_pos < scratch_set_binding_pos
+        or "new HashSet()" in cooldown_update_body
+        or "new ArrayList<>(this.O.values())" in cooldown_update_body
+        or reconciliation_loop_pos < 0
+        or reconciliation_remove_pos < reconciliation_loop_pos
+        or any(
+            mutation in reconciliation_loop_body
+            for mutation in ("this.O.put(", "this.O.remove(", "this.O.clear(", "this.O.entrySet().removeIf")
+        )
+    ):
+        fail("Cooldowns HUD render reconciliation must reuse scratch state and defer map removal until after values iteration")
+
     friends_store = (generated_java / "gui/friends/FriendStore.java").read_text(encoding="utf-8")
     if "migrateLegacyFriendHistory()" not in friends_store or "ConfigJsonCodec.a(json)" not in friends_store:
         fail("FriendStore legacy ConfigState.FriendHistoryState migration is missing")
