@@ -2842,6 +2842,53 @@ patch_generated_java('ai/derco/gui/core/TabSelector.java', (
 ))
 
 
+# Preserve the old profile until the renamed profile has been written successfully.
+patch_generated_java('ai/derco/config/LocalConfigManager.java', (
+    ('''      } else {
+         String strRemove = this.profiles.remove(str);
+         this.profiles.put(strSanitizeName, strRemove);
+         this.deleteFromDisk(str);
+
+         try {
+            this.writeToDisk(strSanitizeName, strRemove);
+            if (this.activeProfile.equals(str)) {
+               this.activeProfile = strSanitizeName;
+            }
+
+            if (runnable != null) {
+               runnable.run();
+            }
+         } catch (IOException e) {
+            LOG.warn("[DercoVisuals] Cannot rename profile {} -> {}", str, strSanitizeName, e);
+            if (consumer != null) {
+               consumer.accept(e.getMessage());
+            }
+         }
+      }''',
+     '''      } else {
+         String strRemove = this.profiles.get(str);
+
+         try {
+            this.writeToDisk(strSanitizeName, strRemove);
+            this.profiles.remove(str);
+            this.profiles.put(strSanitizeName, strRemove);
+            if (this.activeProfile.equals(str)) {
+               this.activeProfile = strSanitizeName;
+            }
+
+            this.deleteFromDisk(str);
+            if (runnable != null) {
+               runnable.run();
+            }
+         } catch (IOException e) {
+            LOG.warn("[DercoVisuals] Cannot rename profile {} -> {}", str, strSanitizeName, e);
+            if (consumer != null) {
+               consumer.accept(e.getMessage());
+            }
+         }
+      }'''),
+))
+
 # Keep the Totems HUD count accurate and expose the full inventory total beside the icon row.
 patch_generated_java('ai/derco/hud/elements/TotemsHudElement.java', (
     ('this.d = 81.0F;', 'this.d = 110.0F;'),
