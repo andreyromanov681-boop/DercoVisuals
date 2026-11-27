@@ -558,3 +558,13 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - This removes one ItemStack allocation per active Totems HUD render invocation. No FPS or GC improvement is claimed without an allocation benchmark. No live Minecraft client smoke test was performed; CI will compile the change and run the JAR verifier.
 - No dependency or Pulse archive change. `main` and user config files are untouched.
 - Next: inspect Totems HUD layout behavior after the widened panel, especially scaling and drag bounds, and only change it if a concrete clipping or positioning defect can be reproduced.
+
+
+## 2026-11-27 — Preserve profiles when a rename write fails
+
+- Inspected the generated `LocalConfigManager.renameProfile` from successful CI run #154. The method removed the old profile from memory and deleted its on-disk JSON before attempting to write the renamed profile.
+- If the destination write failed (for example, a permissions or disk error), the catch block only reported the error; the original profile file had already been deleted and the old in-memory entry was gone. This was a concrete profile data-loss path.
+- Updated the source-of-truth patch in `tools/prepare_pulse_foundation.py`: write the destination profile first, then update the in-memory map and active-profile name, and only then delete the old file. On write failure, the original file and in-memory entry remain intact.
+- Extended `tools/verify_derco_jar.py` to assert the required operation order in the generated method.
+- Local dry-run against the generated Java artifact for HEAD `e3f4e73e153da541404630c91f59e8dd08288305` verified the old ordering was present exactly once and the patched ordering preserves the original entry until the destination write completes. Full Java 21 build and JAR verification run after commit.
+- No Pulse archive, dependencies, user configs, or other branches changed. No live Minecraft UI smoke test was performed.
