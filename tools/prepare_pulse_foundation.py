@@ -2889,6 +2889,31 @@ patch_generated_java('ai/derco/config/LocalConfigManager.java', (
       }'''),
 ))
 
+# Do not publish a new profile to the in-memory list until its JSON file is written.
+# This keeps the GUI and duplicate-name checks consistent when the config directory is
+# read-only or the disk runs out of space.
+patch_generated_java('ai/derco/config/LocalConfigManager.java', (
+    ('''         String strSerializeState = this.serializeState();
+         this.profiles.put(strSanitizeName, strSerializeState);
+
+         try {
+            this.writeToDisk(strSanitizeName, strSerializeState);
+            if (runnable != null) {
+               runnable.run();
+            }
+         } catch (IOException e) {''',
+     '''         String strSerializeState = this.serializeState();
+
+         try {
+            this.writeToDisk(strSanitizeName, strSerializeState);
+            this.profiles.put(strSanitizeName, strSerializeState);
+            if (runnable != null) {
+               runnable.run();
+            }
+         } catch (IOException e) {'''),
+))
+
+
 # Keep the Totems HUD count accurate and expose the full inventory total beside the icon row.
 patch_generated_java('ai/derco/hud/elements/TotemsHudElement.java', (
     ('this.d = 81.0F;', 'this.d = 110.0F;'),

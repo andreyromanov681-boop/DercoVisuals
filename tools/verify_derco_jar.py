@@ -448,6 +448,21 @@ def main() -> None:
     ):
         fail("LocalConfigManager must write the renamed profile before mutating the profile map or deleting the original file")
 
+    create_start = config_manager.find("public void createProfile(")
+    create_end = config_manager.find("public void loadProfile(", create_start)
+    if create_start < 0 or create_end < 0:
+        fail("LocalConfigManager profile creation method is missing or incomplete")
+    create_body = config_manager[create_start:create_end]
+    create_disk_write = create_body.find("this.writeToDisk(strSanitizeName, strSerializeState);")
+    create_memory_publish = create_body.find("this.profiles.put(strSanitizeName, strSerializeState);")
+    create_callback = create_body.find("runnable.run();")
+    create_failure_handler = create_body.find("catch (IOException e)")
+    if (
+        min(create_disk_write, create_memory_publish, create_callback, create_failure_handler) < 0
+        or not (create_disk_write < create_memory_publish < create_callback < create_failure_handler)
+    ):
+        fail("LocalConfigManager must persist a new profile before publishing it in memory or invoking its success callback")
+
     friends_panel = (generated_java / "gui/friends/FriendsPanel.java").read_text(encoding="utf-8")
     remove_signature = "public void b(HistoryEntry historyEntry) {"
     if friends_panel.count(remove_signature) != 1:

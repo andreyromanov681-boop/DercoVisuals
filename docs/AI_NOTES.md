@@ -568,3 +568,13 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Extended `tools/verify_derco_jar.py` to assert the required operation order in the generated method.
 - Local dry-run against the generated Java artifact for HEAD `e3f4e73e153da541404630c91f59e8dd08288305` verified the old ordering was present exactly once and the patched ordering preserves the original entry until the destination write completes. Full Java 21 build and JAR verification run after commit.
 - No Pulse archive, dependencies, user configs, or other branches changed. No live Minecraft UI smoke test was performed.
+
+
+## 2026-11-27 — Publish new config profiles only after disk write succeeds
+
+- Inspected the generated `LocalConfigManager.createProfile` from successful CI run #157 on HEAD `e02d26ab3ddf2bf2a8461c68e7a1002e399f1e31`. The method inserted the new profile into the in-memory map before calling `writeToDisk`. If the write threw `IOException` (for example, a read-only config directory or a full disk), the error callback ran but the profile remained visible in the current ClickGUI session and its name was treated as already taken; after restart it disappeared because no JSON file had been created.
+- Updated the source-of-truth patch in `tools/prepare_pulse_foundation.py`: write the serialized profile JSON first, then publish it to `profiles`, then invoke the success callback. A failed write now leaves the in-memory profile list unchanged.
+- Extended `tools/verify_derco_jar.py` to assert the disk-write → in-memory publish → success callback order and require the IOException handler to remain present.
+- Dry-run against the generated Java artifact from CI #157 found the patch anchor exactly once. The transformed method passed an ordering check; a small failure/success simulation confirmed that a failed write does not publish a profile and a successful write does.
+- The full Java 21 Gradle build, generated-source validation, JAR verifier and artifact upload are delegated to the commit-triggered CI workflow. No live Minecraft GUI or filesystem-permission failure test was performed.
+- No dependency, Pulse archive, user config, or other branch changed. `main` was not modified.
