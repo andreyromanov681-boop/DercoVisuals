@@ -2854,6 +2854,14 @@ patch_generated_java('ai/derco/hud/elements/TotemsHudElement.java', (
      '               matrices.popMatrix();\n               currentDrawContext.drawText(this.a.textRenderer, "x" + totems, 83, 0, ai.derco.hud.core.HudTheme.TEXT.getRGB(), true);\n               matrices.popMatrix();'),
 ))
 
+# Keep one display-only totem stack per HUD element instead of allocating it on every render.
+patch_generated_java('ai/derco/hud/elements/TotemsHudElement.java', (
+    ('public class TotemsHudElement extends HudElement {\n   private boolean settingsBound;',
+     'public class TotemsHudElement extends HudElement {\n   private final ItemStack displayTotemStack = new ItemStack(Items.TOTEM_OF_UNDYING);\n   private boolean settingsBound;'),
+    ('ItemStack totemStack = new ItemStack(Items.TOTEM_OF_UNDYING);',
+     'ItemStack totemStack = this.displayTotemStack;'),
+))
+
 # Register the owned icon family and wire representative art into the live GUI.
 # Existing Pulse-derived GUI logic is preserved; only icons and tiny text offsets change.
 def replace_generated_once(path, old, new, label):

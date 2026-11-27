@@ -547,3 +547,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Local dry-run against the generated Java artifact for HEAD `d48792cc2bfad91b5549e5c59bc8163dc9a81573` found all five transformation anchors exactly once. The resulting source passed structural checks, and a small slot-boundary simulation confirmed totals of 0, 1 offhand totem, and 1 inventory + 1 offhand totem are counted as 0, 1, and 2.
 - Commit-triggered Java 21 Gradle build and JAR verification are pending. No live Minecraft client test or visual positioning check was performed.
 - Next: verify the count badge in-game with inventory and offhand totems, including dragging the HUD near screen edges.
+
+
+## 2026-11-27 — Reuse the Totems HUD display ItemStack
+
+- Inspected the generated `TotemsHudElement` from successful CI run #45820801084 for branch HEAD `b4d3f0178877e7b6a0db5bd2ccc63dca105c09a2`. Its render method created a new `ItemStack(Items.TOTEM_OF_UNDYING)` every active HUD frame, although the stack is only passed to `DrawContext.drawItem` and is not modified by this HUD class.
+- Updated the source-of-truth transformation in `tools/prepare_pulse_foundation.py`: each Totems HUD element now owns one private final display stack initialized once and reuses it for the icon loop. The stack is per-element rather than static, avoiding a globally shared mutable ItemStack.
+- Extended `tools/verify_derco_jar.py` to require exactly one field initializer, the cached field reference in the render method, and no totem ItemStack construction inside that method.
+- Dry-run against the generated Java artifact from run #45820801084 found both source anchors exactly once. The transformed class contains one totem display-stack construction (the field initializer), zero such constructions in the render method, and still passes the same stack to each icon draw.
+- This removes one ItemStack allocation per active Totems HUD render invocation. No FPS or GC improvement is claimed without an allocation benchmark. No live Minecraft client smoke test was performed; CI will compile the change and run the JAR verifier.
+- No dependency or Pulse archive change. `main` and user config files are untouched.
+- Next: inspect Totems HUD layout behavior after the widened panel, especially scaling and drag bounds, and only change it if a concrete clipping or positioning defect can be reproduced.

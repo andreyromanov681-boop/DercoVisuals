@@ -207,6 +207,10 @@ def main() -> None:
     totem_count_draw = totems_hud.find(
         'currentDrawContext.drawText(this.a.textRenderer, "x" + totems, 83, 0, ai.derco.hud.core.HudTheme.TEXT.getRGB(), true);'
     )
+    totem_render_start = totems_hud.find(
+        "public void a(Matrix3x2fStack MatrixStackVar, Renderer2D renderer2D, float f, float f2)"
+    )
+    totem_render_body = totems_hud[totem_render_start:]
     if (
         totem_inventory_scan < 0
         or "for (int i = 0; i < inventorySize; i++) {" not in totems_hud
@@ -220,6 +224,11 @@ def main() -> None:
         or totem_count_draw <= totem_icon_loop
         or totem_count_draw <= totem_offhand_read
         or totems_hud.count('currentDrawContext.drawText(this.a.textRenderer, "x" + totems, 83, 0, ai.derco.hud.core.HudTheme.TEXT.getRGB(), true);') != 1
+        or totem_render_start < 0
+        or totems_hud.count("private final ItemStack displayTotemStack = new ItemStack(Items.TOTEM_OF_UNDYING);") != 1
+        or totems_hud.count("new ItemStack(Items.TOTEM_OF_UNDYING)") != 1
+        or "ItemStack totemStack = this.displayTotemStack;" not in totem_render_body
+        or "new ItemStack(Items.TOTEM_OF_UNDYING)" in totem_render_body
     ):
         fail("Totems HUD must count the offhand once and render the exact total beside the capped icon row")
 
