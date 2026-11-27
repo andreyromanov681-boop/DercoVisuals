@@ -431,6 +431,23 @@ def main() -> None:
         if method_start < 0 or method_end < 0 or guard not in friends_store[method_start:method_end]:
             fail(f"FriendStore {signature} must refuse to use or mutate an unreadable store")
 
+    config_manager = (generated_java / "config/LocalConfigManager.java").read_text(encoding="utf-8")
+    rename_start = config_manager.find("public void renameProfile(")
+    rename_end = config_manager.find("public String getProfileData(", rename_start)
+    if rename_start < 0 or rename_end < 0:
+        fail("LocalConfigManager profile rename method is missing or incomplete")
+    rename_body = config_manager[rename_start:rename_end]
+    new_profile_write = rename_body.find("this.writeToDisk(strSanitizeName, strRemove);")
+    old_profile_remove = rename_body.find("this.profiles.remove(str);")
+    renamed_profile_add = rename_body.find("this.profiles.put(strSanitizeName, strRemove);")
+    old_file_delete = rename_body.find("this.deleteFromDisk(str);")
+    rename_failure_handler = rename_body.find("catch (IOException e)")
+    if (
+        min(new_profile_write, old_profile_remove, renamed_profile_add, old_file_delete, rename_failure_handler) < 0
+        or not (new_profile_write < old_profile_remove < renamed_profile_add < old_file_delete < rename_failure_handler)
+    ):
+        fail("LocalConfigManager must write the renamed profile before mutating the profile map or deleting the original file")
+
     friends_panel = (generated_java / "gui/friends/FriendsPanel.java").read_text(encoding="utf-8")
     remove_signature = "public void b(HistoryEntry historyEntry) {"
     if friends_panel.count(remove_signature) != 1:
