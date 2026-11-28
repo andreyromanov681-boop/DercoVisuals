@@ -2914,6 +2914,68 @@ patch_generated_java('ai/derco/config/LocalConfigManager.java', (
 ))
 
 
+# Keep a config profile in memory until its JSON file has actually been deleted.
+# A filesystem error must not make the GUI report a successful deletion or lose the
+# profile from the current session while its file remains on disk.
+patch_generated_java('ai/derco/config/LocalConfigManager.java', (
+    ('''   public void deleteProfile(String str, Runnable runnable, Consumer<String> consumer) {
+      if (!this.profiles.containsKey(str)) {
+         if (consumer != null) {
+            consumer.accept("Профиль '" + str + "' не найден");
+         }
+      } else {
+         this.profiles.remove(str);
+         this.deleteFromDisk(str);
+         if (this.activeProfile.equals(str)) {
+            this.activeProfile = this.profiles.isEmpty() ? "default" : this.profiles.keySet().iterator().next();
+         }
+
+         if (runnable != null) {
+            runnable.run();
+         }
+      }
+   }''',
+     '''   public void deleteProfile(String str, Runnable runnable, Consumer<String> consumer) {
+      if (!this.profiles.containsKey(str)) {
+         if (consumer != null) {
+            consumer.accept("Профиль '" + str + "' не найден");
+         }
+      } else {
+         if (!this.deleteFromDisk(str)) {
+            if (consumer != null) {
+               consumer.accept("Не удалось удалить файл профиля '" + str + "'");
+            }
+            return;
+         }
+
+         this.profiles.remove(str);
+         if (this.activeProfile.equals(str)) {
+            this.activeProfile = this.profiles.isEmpty() ? "default" : this.profiles.keySet().iterator().next();
+         }
+
+         if (runnable != null) {
+            runnable.run();
+         }
+      }
+   }'''),
+    ('''   private void deleteFromDisk(String str) {
+      try {
+         Files.deleteIfExists(this.getConfigDir().resolve(sanitizeName(str) + ".json"));
+      } catch (IOException e) {
+         LOG.warn("[DercoVisuals] Cannot delete profile {}", str, e);
+      }
+   }''',
+     '''   private boolean deleteFromDisk(String str) {
+      try {
+         Files.deleteIfExists(this.getConfigDir().resolve(sanitizeName(str) + ".json"));
+         return true;
+      } catch (IOException e) {
+         LOG.warn("[DercoVisuals] Cannot delete profile {}", str, e);
+         return false;
+      }
+   }'''),
+))
+
 # Keep the Totems HUD count accurate and expose the full inventory total beside the icon row.
 patch_generated_java('ai/derco/hud/elements/TotemsHudElement.java', (
     ('this.d = 81.0F;', 'this.d = 110.0F;'),

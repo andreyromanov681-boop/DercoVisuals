@@ -578,3 +578,14 @@ Append a dated entry with assistant/tool identity, files changed, behavior chang
 - Dry-run against the generated Java artifact from CI #157 found the patch anchor exactly once. The transformed method passed an ordering check; a small failure/success simulation confirmed that a failed write does not publish a profile and a successful write does.
 - The full Java 21 Gradle build, generated-source validation, JAR verifier and artifact upload are delegated to the commit-triggered CI workflow. No live Minecraft GUI or filesystem-permission failure test was performed.
 - No dependency, Pulse archive, user config, or other branch changed. `main` was not modified.
+
+
+## 2026-11-28 — Preserve config profiles when disk deletion fails
+
+- Inspected the generated `LocalConfigManager` from successful CI run #158 on `pulse-foundation` HEAD `0fe94d1734cbc2d38b19febc653e082001a9b03c`. `deleteProfile()` removed the profile from the in-memory map and updated the active-profile name before calling `deleteFromDisk()`; that helper swallowed `IOException`, so the GUI still ran the success callback even when the JSON file remained on disk.
+- Changed the source-of-truth patch in `tools/prepare_pulse_foundation.py`: `deleteFromDisk()` now returns whether the delete operation completed without an I/O error. `deleteProfile()` checks that result before mutating the profile map, changing the active profile, or invoking the success callback. On failure it logs the original exception, reports an error through the existing consumer, and leaves the profile available in the current session.
+- Missing files remain a successful deletion because `Files.deleteIfExists()` returns normally when the path is absent. The existing rename call remains source-compatible; its prior best-effort cleanup behavior is unchanged.
+- Extended `tools/verify_derco_jar.py` to enforce the disk-delete → in-memory removal → active-profile update → success-callback order and the helper's true/false result contract.
+- Local dry-run against the generated Java source artifact from CI #158 found both transformation anchors exactly once. Structural checks confirmed that the failure return occurs before all in-memory changes and the success callback.
+- Java 21 Gradle build and final JAR verification are delegated to the commit-triggered workflow. No live Minecraft UI test or forced filesystem-permission failure test was performed.
+- No dependencies, Pulse source archive, user config files, or other branches were changed.

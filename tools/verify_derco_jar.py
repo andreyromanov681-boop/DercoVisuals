@@ -463,6 +463,41 @@ def main() -> None:
     ):
         fail("LocalConfigManager must persist a new profile before publishing it in memory or invoking its success callback")
 
+    delete_start = config_manager.find("public void deleteProfile(")
+    delete_end = config_manager.find("public void renameProfile(", delete_start)
+    if delete_start < 0 or delete_end < 0:
+        fail("LocalConfigManager profile deletion method is missing or incomplete")
+    delete_body = config_manager[delete_start:delete_end]
+    delete_disk_guard = delete_body.find("if (!this.deleteFromDisk(str))")
+    delete_error_callback = delete_body.find('consumer.accept("Не удалось удалить файл профиля')
+    delete_failure_return = delete_body.find("return;", delete_disk_guard)
+    delete_memory_remove = delete_body.find("this.profiles.remove(str);")
+    delete_active_update = delete_body.find("if (this.activeProfile.equals(str))")
+    delete_success_callback = delete_body.find("runnable.run();")
+    if (
+        min(delete_disk_guard, delete_error_callback, delete_failure_return, delete_memory_remove, delete_active_update, delete_success_callback) < 0
+        or not (
+            delete_disk_guard < delete_error_callback < delete_failure_return
+            < delete_memory_remove < delete_active_update < delete_success_callback
+        )
+    ):
+        fail("LocalConfigManager must preserve the in-memory profile and skip success callback when disk deletion fails")
+
+    delete_helper_start = config_manager.find("private boolean deleteFromDisk(")
+    delete_helper_end = config_manager.find("private static String sanitizeName(", delete_helper_start)
+    if delete_helper_start < 0 or delete_helper_end < 0:
+        fail("LocalConfigManager disk deletion helper must return its persistence result")
+    delete_helper = config_manager[delete_helper_start:delete_helper_end]
+    delete_file_call = delete_helper.find("Files.deleteIfExists(")
+    delete_success = delete_helper.find("return true;")
+    delete_io_catch = delete_helper.find("catch (IOException e)")
+    delete_failure = delete_helper.find("return false;")
+    if (
+        min(delete_file_call, delete_success, delete_io_catch, delete_failure) < 0
+        or not (delete_file_call < delete_success < delete_io_catch < delete_failure)
+    ):
+        fail("LocalConfigManager disk deletion helper must report success only after deleteIfExists and false on IOException")
+
     friends_panel = (generated_java / "gui/friends/FriendsPanel.java").read_text(encoding="utf-8")
     remove_signature = "public void b(HistoryEntry historyEntry) {"
     if friends_panel.count(remove_signature) != 1:
